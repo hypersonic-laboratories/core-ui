@@ -10,23 +10,22 @@ Core-UI is a package for HELIX Game, designed to empower creators with the abili
 <br>
 2 - Drag and drop core-ui folder to your Packages folder.
 <br>
-3 - Add core-ui to your Config.toml on `[packages]` section. 
+3 - Add core-ui to your Config.toml on `[packages]` section.
 <br>
-## Calling core-ui classes from other packages
+<br>
+![image](https://github.com/helix-game/core-ui/assets/67294331/ac69692f-e3dd-4779-b68a-32166a7ad12a)
+<br>
+## Calling core-ui classes from other packages.
 
 1 - Add core-ui on `packages_requirements` inside your Package.toml file.
 <br>
 <br>
 ![image](https://github.com/helix-game/core-ui/assets/67294331/a6f8a114-6fe7-4dc3-91c7-5756d353007c)
-<br>
-<br>
-2 - Call `Notification` - `ContextMenu` - `SelectMenu` or `Interaction` classes on the client side of your Package. 
+## Usage:
 
-## Usage 
+First take a look at: <a href="https://add-core-ui.docs-9aw.pages.dev/docs/scripting-reference/static-classes/chat#event-playersubmit" target="_blank">PlayerSubmit Event</a>
 
-First read: <a href="https://add-core-ui.docs-9aw.pages.dev/docs/scripting-reference/static-classes/chat#event-playersubmit" target="_blank">PlayerSubmit Event</a>
-
-### Example of how to use ContextMenu class 
+### Example of how to use ContextMenu class:
 ```lua
 Chat.Subscribe("PlayerSubmit", function(message, player)
     if message == "/menu" then
@@ -54,9 +53,7 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
 end)
 ```
 ![image](https://github.com/helix-game/core-ui/assets/67294331/6626758c-a10a-40ff-9991-8352a21a1a49)
-<br>
-<br>
-### Example of how to use SelectMenu class 
+### Example of how to use SelectMenu class:
 ```lua
 Chat.Subscribe("PlayerSubmit", function(message, player)
     if message == "selectmenu" then
@@ -90,9 +87,7 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
 end)
 ```
 ![image](https://github.com/helix-game/core-ui/assets/67294331/d180a49e-d41c-4468-b4cb-1f4fbcfcdfc2)
-<br>
-<br>
-### Example of how to use Interaction class 
+### Example of how to use Interaction class:
 ```lua
 Chat.Subscribe("PlayerSubmit", function(message, player)
     -- Command 'int' to show interaction
@@ -106,9 +101,7 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
 end)
 ```
 ![image](https://github.com/helix-game/core-ui/assets/67294331/f038df82-18e0-4f95-b005-7539fb85703b)
-<br>
-<br>
-### Example of how to use Notification class 
+### Example of how to use Notification class:
 ```lua
 Chat.Subscribe("PlayerSubmit", function(message, player)
     -- Checks if the received message is 'not'
