@@ -10,7 +10,7 @@ Core-UI is a package for HELIX Game, designed to empower creators with the abili
 <br>
 2 - Drag and drop core-ui folder to your Packages folder.
 <br>
-3 - Add core-ui to your Config.toml on `[packages]` section.
+3 - Add core-ui to your Config.toml (inside your Server folder) on `[packages]` section.
 <br>
 <br>
 ![image](https://github.com/helix-game/core-ui/assets/67294331/ac69692f-e3dd-4779-b68a-32166a7ad12a)
