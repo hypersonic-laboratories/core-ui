@@ -28,7 +28,6 @@ Events.Subscribe("interact:released", function(){
 });
 
 Events.Subscribe("interact:show", function(state, text){
-    // console.log("TEST FROM JS")
     let e = document.getElementsByClassName("screen")[0];
     let eText = document.getElementById("interaction-text");
     e.style.opacity = state ? 1 : 0;

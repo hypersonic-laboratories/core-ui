@@ -40,10 +40,11 @@ function ContextMenu:addCheckbox(id, label, checked, callback)
 end
 
 -- Adds a dropdown to the menu
-function ContextMenu:addDropdown(id, options, callback)
+function ContextMenu:addDropdown(id, label, options, callback)
     -- Inserts a new dropdown item with the given ID, options, and callback
     table.insert(self.items, {
         id = id,
+        label = label,
         type = "dropdown",
         options = options,
         callback = callback
@@ -73,7 +74,7 @@ function ContextMenu:addTextInput(id, text, callback)
     table.insert(self.items, {
         id = id,
         type = "text-input",
-        text = text,
+        label = text,
         callback = callback
     })
 end
@@ -154,7 +155,13 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
         myMenu:addCheckbox("give-user", "Checkbox", true, function()
             Chat.AddMessage('i pressed checbkox')
         end)
-        myMenu:addDropdown("set-user", { { value = "1", text = "Option 1" }, { value = "2", text = "Option 2" } },
+        myMenu:addDropdown("set-user", "Change Map",
+            { { id = "1", label = "Option 1", type = "checkbox", checked = false }, { id = "2", label = "Option 2", type = "checkbox", checked = false } },
+            function(option)
+                Chat.AddMessage('selected option: ' .. option)
+            end)
+        myMenu:addDropdown("doper", "Set Player money",
+            { { id = "1", label = "Bank", type = "text-input" }, { id = "2", label = "Cash", type = "text-input" } },
             function(option)
                 Chat.AddMessage('selected option: ' .. option)
             end)
