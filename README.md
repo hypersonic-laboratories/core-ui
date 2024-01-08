@@ -27,17 +27,23 @@ First take a look at: <a href="https://add-core-ui.docs-9aw.pages.dev/docs/scrip
 
 ### Example of how to use ContextMenu class:
 ```lua
+-- Example of how to use the context menu
 Chat.Subscribe("PlayerSubmit", function(message, player)
     if message == "/menu" then
         local myMenu = ContextMenu.new()
-        myMenu:addButton("date-user", "Buton - Function", function()
-            -- here you execute something
+        myMenu:addButton("button-id", "Buton - Function", function()
             Chat.AddMessage("I pressed addbutton")
         end)
-        myMenu:addCheckbox("give-user", "Checkbox", true, function()
-            Chat.AddMessage('i pressed checbkox')
+        myMenu:addCheckbox("checkbox-id", "Checkbox", true, function()
+            Chat.AddMessage('I pressed a checbkox')
         end)
-        myMenu:addDropdown("set-user", { { value = "1", text = "Option 1" }, { value = "2", text = "Option 2" } },
+        myMenu:addDropdown("set-user", "Change Map",
+            { { id = "1", label = "Option 1", type = "checkbox", checked = false }, { id = "2", label = "Option 2", type = "checkbox", checked = false } },
+            function(option)
+                Chat.AddMessage('Selected option: ' .. option)
+            end)
+        myMenu:addDropdown("dropdown-id", "Set Player money",
+            { { id = "1", label = "Bank", type = "text-input" }, { id = "2", label = "Cash", type = "text-input" } },
             function(option)
                 Chat.AddMessage('selected option: ' .. option)
             end)
@@ -52,41 +58,45 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
     end
 end)
 ```
-![image](https://github.com/helix-game/core-ui/assets/67294331/6626758c-a10a-40ff-9991-8352a21a1a49)
+![image](https://github.com/helix-game/core-ui/assets/67294331/4433107a-c69b-4c15-a19f-4d5323d81466)
+
 ### Example of how to use SelectMenu class:
 ```lua
 Chat.Subscribe("PlayerSubmit", function(message, player)
-    if message == "selectmenu" then
-        -- Creates and configures a new select menu with options
-        local selectMenu = SelectMenu.new()
-        selectMenu:addOption('option1', 'Option 1', -- id, text
-            'https://playtoearn.net/blog_images/helix-p2e-metaverse-game-introduces-this-months-exciting-list-of-events-1000x700.jpeg', -- image 
-            'This is the description for Option 1', function() -- description, callback
-                Chat.AddMessage("Option selected: Option 1") -- here you execute anything u want :)
-            end)
+    if message == "sel" then
+        local options = SelectMenu.new()
 
-        selectMenu:addOption('option2', 'Option 2',
-            'https://playtoearn.net/blog_images/helix-p2e-metaverse-game-introduces-this-months-exciting-list-of-events-1000x700.jpeg',
-            'This is the description for Option 2', function()
-                Chat.AddMessage("Option selected: Option 2")
-            end)
+        options:SetTitle('Select Next game mode')
 
-        selectMenu:addOption('option3', 'Option 3',
-            'https://playtoearn.net/blog_images/helix-p2e-metaverse-game-introduces-this-months-exciting-list-of-events-1000x700.jpeg',
-            'This is the description for Option 3', function()
-                Chat.AddMessage("Option selected: Option 3")
-            end)
+        options:addOption("magin-option", "Magin Valley", "./media/gm3.png",
+            "Step Magin Valley into the boots of a battle-hardened warrior...", {
+                { name = "rating",  value = "88%",       icon = "./media/icon1.svg" },
+                { name = "creator", value = "Player123", icon = "./media/icon2.svg" },
+                { name = "players", value = "4 - 16",    icon = "./media/icon3.svg" }
+            },
+            function()
+                Chat.AddMessage("Option Magin Valley selected")
+            end
+        )
 
-        selectMenu:addOption('option4', 'Option 4',
-            'https://playtoearn.net/blog_images/helix-p2e-metaverse-game-introduces-this-months-exciting-list-of-events-1000x700.jpeg',
-            'This is the description for Option 4', function()
-                Chat.AddMessage("Option selected: Option 4")
-            end)
-        selectMenu:Open() -- Opens the select menu
+        options:addOption("casino-option", "Casino Royale", "./media/gm2.png",
+            "Step Casino Royale into the boots of a battle-hardened warrior, surrounded by the chaos of war. Frontlines delivers an unparalleled FPS experience, thrusting you into meticulously crafted battlegrounds that challenge your skills and mental toughness as you navigate tough and diverse landscapes",
+            {
+                { name = "rating",  value = "22%",       icon = "./media/icon1.svg" },
+                { name = "creator", value = "Kravs123", icon = "./media/icon2.svg" },
+                { name = "players", value = "1 - 128",    icon = "./media/icon3.svg" }
+            },
+            function()
+                Chat.AddMessage("Option casino royale selected")
+            end
+        )
+
+        options:Open()
     end
 end)
 ```
-![image](https://github.com/helix-game/core-ui/assets/67294331/d180a49e-d41c-4468-b4cb-1f4fbcfcdfc2)
+![image](https://github.com/helix-game/core-ui/assets/67294331/c18606fe-9408-4869-9fee-2e9ff4718141)
+
 ### Example of how to use Interaction class:
 ```lua
 Chat.Subscribe("PlayerSubmit", function(message, player)
@@ -103,14 +113,16 @@ end)
 ![image](https://github.com/helix-game/core-ui/assets/67294331/f038df82-18e0-4f95-b005-7539fb85703b)
 ### Example of how to use Notification class:
 ```lua
+-- Subscribes to a chat event to listen for specific player messages
 Chat.Subscribe("PlayerSubmit", function(message, player)
     -- Checks if the received message is 'not'
     if message == 'not' then
         -- Sends a notification when the 'not' message is received
-        Notification.Send('Title', 'Content content content', 5, 'center', "#00f300")
-        -- Parameters are title, message, duration, position, and color
+        Notification.Send('success', 'Title', 'Notification Content')
+        -- Parameters are type, title and message
+        -- types: success - error - info
     end
 end)
 ```
-![image](https://github.com/helix-game/core-ui/assets/67294331/5e2ed392-a340-46bb-a94b-8ae18afafdb9)
+![image](https://github.com/helix-game/core-ui/assets/67294331/82e174a1-91eb-4292-88eb-776ec2e03d54)
 
