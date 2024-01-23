@@ -42,13 +42,62 @@ end
 -- Adds a dropdown to the menu
 function ContextMenu:addDropdown(id, label, options, callback)
     -- Inserts a new dropdown item with the given ID, options, and callback
+    local dropdownOptions = {}
+    for i, option in ipairs(options) do
+        table.insert(dropdownOptions, {
+            type = option.type,
+            id = option.id,
+            label = option.label,
+            callback = option.callback
+        })
+    end
     table.insert(self.items, {
         id = id,
         label = label,
         type = "dropdown",
-        options = options,
+        options = dropdownOptions,
         callback = callback
     })
+end
+
+-- Adds a range input to the menu
+function ContextMenu:addRange(id, label, min, max, value, callback)
+    -- Inserts a new range item with the given ID, label, min, max values, and callback
+    min = min or 0
+    max = max or 100
+    value = value or min
+    table.insert(self.items, {
+        id = id,
+        type = "range",
+        label = label,
+        min = min,
+        max = max,
+        value = value,
+        callback = callback
+    })
+end
+
+-- Adds a text input to the menu
+function ContextMenu:addTextInput(id, text, callback)
+    -- Inserts a new text input item with the given ID, text, and callback
+    table.insert(self.items, {
+        id = id,
+        type = "text-input",
+        label = text,
+        callback = callback
+    })
+end
+
+-- Retrieves the current menu items
+function ContextMenu:getItems()
+    return self.items
+end
+
+-- Sends a notification event to the WebUI
+function ContextMenu:SendNotification(title, text, time, position, color)
+    -- Calls the WebUI event to show a notification with the provided details
+    self.UI:CallEvent("ShowNotification",
+        { title = title, message = text, duration = time, pos = position, color = color })
 end
 
 -- Adds a range input to the menu
@@ -101,6 +150,16 @@ function ContextMenu:Open(input, mouse)
     Input.SetMouseEnabled(mouse)
 end
 
+function ContextMenu:setMenuInfo(title, description)
+    self.UI:CallEvent("setMenuInfo", title, description)
+end
+
+function ContextMenu:SetHeader(title)
+    self.Header = title
+
+    self.UI:CallEvent("setHeader", title)
+end
+
 -- Closes the menu
 function ContextMenu:Close()
     -- Calls the WebUI event to close the context menu
@@ -122,6 +181,15 @@ function ContextMenu:executeCallback(id, params)
         if item.id == id and item.callback then
             item.callback(params)
             return
+        end
+
+        if item.options then
+            for _, option in ipairs(item.options) do
+                if option.id == id and option.callback then
+                    option.callback(params)
+                    return
+                end
+            end
         end
     end
 end
@@ -148,23 +216,55 @@ end)
 Chat.Subscribe("PlayerSubmit", function(message, player)
     if message == "/menu" then
         local myMenu = ContextMenu.new()
-        myMenu:addButton("date-user", "Buton - Function", function()
-            -- here you execute something
+        myMenu:addButton("button-id", "Buton - Function", function()
             Chat.AddMessage("I pressed addbutton")
         end)
-        myMenu:addCheckbox("give-user", "Checkbox", true, function()
-            Chat.AddMessage('i pressed checbkox')
+        myMenu:addCheckbox("checkbox-id", "Checkbox", true, function()
+            Chat.AddMessage('I pressed a checbkox')
         end)
         myMenu:addDropdown("set-user", "Change Map",
-            { { id = "1", label = "Option 1", type = "checkbox", checked = false }, { id = "2", label = "Option 2", type = "checkbox", checked = false } },
-            function(option)
-                Chat.AddMessage('selected option: ' .. option)
-            end)
-        myMenu:addDropdown("doper", "Set Player money",
-            { { id = "1", label = "Bank", type = "text-input" }, { id = "2", label = "Cash", type = "text-input" } },
-            function(option)
-                Chat.AddMessage('selected option: ' .. option)
-            end)
+            {
+                {
+                    id = "1",
+                    label = "Option 1",
+                    type = "checkbox",
+                    checked = false,
+                    callback = function()
+                        Chat.AddMessage('Selected option: Option 1')
+                    end
+                },
+                {
+                    id = "2",
+                    label = "Option 2",
+                    type = "checkbox",
+                    checked = false,
+                    callback = function()
+                        Chat.AddMessage('Selected option: Option 2')
+                    end
+                }
+            }
+        )
+
+        myMenu:addDropdown("dropdown-id", "Set Player money",
+            {
+                {
+                    id = "1",
+                    label = "Bank",
+                    type = "text-input",
+                    callback = function()
+                        Chat.AddMessage('Selected option: Bank')
+                    end
+                },
+                {
+                    id = "2",
+                    label = "Cash",
+                    type = "text-input",
+                    callback = function()
+                        Chat.AddMessage('Selected option: Cash')
+                    end
+                }
+            }
+        )
         myMenu:addRange("quantity", "Quantity", 0, 100, 50, function(value)
             Chat.AddMessage('range value: ' .. value)
         end)
@@ -175,3 +275,6 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
         myMenu:Open(false, true) -- Enable input, Enable mouse
     end
 end)
+
+
+Package.Export("ContextMenu", ContextMenu)

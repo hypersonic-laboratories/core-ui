@@ -18,7 +18,10 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
     if message == 'not' then
         -- Sends a notification when the 'not' message is received
         Chat.AddMessage('dodododo')
-        Notification.Send('success', 'Title', 'tessssxt')
+        Notification.Send('success', 'Title', 'Notification Content')
         -- Parameters are title, message, duration, position, and color
     end
 end)
+
+
+Package.Export("Notification", Notification)
