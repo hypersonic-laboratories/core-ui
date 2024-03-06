@@ -134,7 +134,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ```markdown
 MIT License
 
-Copyright (c) [Year] [Your Name or Organization]
+Copyright (c) 2024 Hypersonic Laboratories
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
