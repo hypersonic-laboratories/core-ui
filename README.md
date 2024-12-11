@@ -1,5 +1,4 @@
 # Core-UI: Simplifying In-Game UI Creation for HELIX Game Creators
-**NOTE: Front-end is just a template, it will be replaced with a responsive & better looking UI soon.**
 <br>
 <br>
 Core-UI is a package for HELIX Game, designed to empower creators with the ability to effortlessly generate and manage in-game user interfaces. This package combines HTML, CSS, JS, and Lua using the HELIX Game Scripting API, offering a streamlined approach to UI development within the HELIX gaming environment.
