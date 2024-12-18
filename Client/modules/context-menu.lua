@@ -37,22 +37,27 @@ function ContextMenu:addCheckbox(id, label, checked, callback)
     })
 end
 
--- Add a dropdown to the menu
+-- Add a dropdown to the menu (with nested dropdown support)
 function ContextMenu:addDropdown(id, label, options, callback)
     local dropdownOptions = {}
-    for _, option in ipairs(options) do
-        table.insert(dropdownOptions, {
-            type = option.type,
-            id = option.id,
-            label = option.label,
-            callback = option.callback
-        })
+    for _, item in ipairs(options) do
+        local newItem = {
+            type     = item.type,
+            id       = item.id,
+            label    = item.label,
+            callback = item.callback
+        }
+        if item.type == "dropdown" and item.options then
+            newItem.options = item.options
+        end
+        table.insert(dropdownOptions, newItem)
     end
+
     table.insert(self.items, {
-        id = id,
-        label = label,
-        type = "dropdown",
-        options = dropdownOptions,
+        id       = id,
+        label    = label,
+        type     = "dropdown",
+        options  = dropdownOptions,
         callback = callback
     })
 end
@@ -79,6 +84,54 @@ function ContextMenu:addTextInput(id, text, callback)
         id = id,
         type = "text-input",
         label = text,
+        callback = callback
+    })
+end
+
+-- Add a password input
+function ContextMenu:addPassword(id, label, placeholder, callback)
+    placeholder = placeholder or ""
+    table.insert(self.items, {
+        id = id,
+        type = "password",
+        label = label,
+        placeholder = placeholder,
+        callback = callback
+    })
+end
+
+-- Add a radio group
+function ContextMenu:addRadio(id, label, radioOptions, callback)
+    -- radioOptions = { { value = "cash", text = "Cash", checked = true }, ... }
+    table.insert(self.items, {
+        id = id,
+        type = "radio",
+        label = label,
+        options = radioOptions,
+        callback = callback
+    })
+end
+
+-- Add a number input
+function ContextMenu:addNumber(id, label, defaultValue, callback)
+    defaultValue = defaultValue or 0
+    table.insert(self.items, {
+        id = id,
+        type = "number",
+        label = label,
+        value = defaultValue,
+        callback = callback
+    })
+end
+
+-- Add a select (dropdown) input
+function ContextMenu:addSelect(id, label, selectOptions, callback)
+    -- selectOptions = { { value = "none", text = "None", selected = true }, ... }
+    table.insert(self.items, {
+        id = id,
+        type = "select",
+        label = label,
+        options = selectOptions,
         callback = callback
     })
 end
@@ -170,60 +223,101 @@ end)
 Chat.Subscribe("PlayerSubmit", function(message, player)
     if message == "/menu" then
         local myMenu = ContextMenu.new()
-        myMenu:addButton("button-id", "Buton - Function", function()
-            Chat.AddMessage("I pressed addbutton")
+
+        -- Botón simple
+        myMenu:addButton("button-id", "Button - Function", function()
+            Chat.AddMessage("Pressed addbutton")
         end)
+
+        -- Checkbox simple
         myMenu:addCheckbox("checkbox-id", "Checkbox", true, function()
-            Chat.AddMessage('I pressed a checkbox')
+            Chat.AddMessage("Pressed a checkbox")
         end)
+
+        -- Dropdown directo
         myMenu:addDropdown("set-user", "Change Map", {
             {
-                id = "1",
+                id = "opt1",
                 label = "Option 1",
                 type = "checkbox",
                 checked = false,
                 callback = function()
-                    Chat.AddMessage('Selected option: Option 1')
+                    Chat.AddMessage('Selected: Option 1')
                 end
             },
             {
-                id = "2",
+                id = "opt2",
                 label = "Option 2",
                 type = "checkbox",
                 checked = false,
                 callback = function()
-                    Chat.AddMessage('Selected option: Option 2')
+                    Chat.AddMessage('Selected: Option 2')
                 end
             }
         })
+
+        -- Dropdown con text-input
         myMenu:addDropdown("dropdown-id", "Set Player money", {
             {
                 id = "1",
                 label = "Bank",
                 type = "text-input",
-                callback = function()
-                    Chat.AddMessage('Selected option: Bank')
+                callback = function(val)
+                    Chat.AddMessage('Entered bank amount: ' .. val)
                 end
             },
             {
                 id = "2",
                 label = "Cash",
                 type = "text-input",
-                callback = function()
-                    Chat.AddMessage('Selected option: Cash')
+                callback = function(val)
+                    Chat.AddMessage('Entered cash amount: ' .. val)
                 end
             }
         })
+
+        -- Range / slider
         myMenu:addRange("quantity", "Quantity", 0, 100, 50, function(value)
-            Chat.AddMessage('range value: ' .. value)
-        end)
-        myMenu:addTextInput("text-input", "Text input", function(text)
-            Chat.AddMessage('text input: ' .. text)
+            Chat.AddMessage('Range value: ' .. value)
         end)
 
-        myMenu:Open(false, true) -- Enable input, Enable mouse
+        -- Text input normal
+        myMenu:addTextInput("text-input", "Text input", function(text)
+            Chat.AddMessage('Text input: ' .. text)
+        end)
+
+        -- Password input
+        myMenu:addPassword("pwd-1", "Password Input", "Enter Password", function(value)
+            Chat.AddMessage("Password entered: " .. value)
+        end)
+
+        -- Radio group
+        myMenu:addRadio("radio-1", "Payment Method", {
+            { value = "bill", text = "Bill", checked = false },
+            { value = "cash", text = "Cash", checked = true },
+            { value = "bank", text = "Bank", checked = false },
+        }, function(selectedValue)
+            Chat.AddMessage("Radio selected: " .. selectedValue)
+        end)
+
+        -- Number input
+        myMenu:addNumber("number-1", "Number Input", 42, function(val)
+            Chat.AddMessage("Number input: " .. val)
+        end)
+
+        -- Select input
+        myMenu:addSelect("select-1", "Select Something", {
+            { value = "none", text = "None", selected = true },
+            { value = "one", text = "Option One" },
+            { value = "two", text = "Option Two" },
+        }, function(selected)
+            Chat.AddMessage("Selected from dropdown: " .. selected)
+        end)
+
+        myMenu:Open(false, true)
     end
 end)
+
 
 -- Export the ContextMenu class
 Package.Export("ContextMenu", ContextMenu)
