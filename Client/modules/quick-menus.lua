@@ -4,7 +4,7 @@ QuickMenus = {}
 QuickMenus.__index = QuickMenus
 
 -- WebUI for quick menus
-QuickMenus.UI = WebUI("QuickMenus", "file:///UI/quickmenus/index.html")
+QuickMenus.UI = WebUI("QuickMenus", "file:///UI/quick-menus/index.html")
 
 -- Current singleton instance
 QuickMenus.current = nil
@@ -25,6 +25,7 @@ function QuickMenus:ShowInput(title, placeholder, callback, callback_cancel)
 	self.input_callback = callback
 	self.input_cancel_callback = callback_cancel
 	self.UI:CallEvent("ShowInputMenu", title, placeholder or "")
+	self.UI:BringToFront() -- Ensure the menu is on top
 	Input.SetMouseEnabled(true)
 end
 
@@ -37,6 +38,7 @@ function QuickMenus:ShowConfirm(title, message, callback_yes, callback_no)
 	self.confirm_yes_callback = callback_yes
 	self.confirm_no_callback = callback_no
 	self.UI:CallEvent("ShowConfirmMenu", title, message)
+	self.UI:BringToFront() -- Ensure the menu is on top
 	Input.SetMouseEnabled(true)
 end
 
