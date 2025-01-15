@@ -615,7 +615,7 @@ Chat.Subscribe("PlayerSubmit", function(message, player)
         myMenu:addDatePicker("date-1", "Choose a date", "2024-12-31", function(theDate)
             Chat.AddMessage("Date selected: " .. theDate)
         end)
-        
+
         -- List Picker
         myMenu:addListPicker("list-picker-weapons", "Choose weapon", {
             { id = "weapon_sniper", label = "Sniper Rifle" },
