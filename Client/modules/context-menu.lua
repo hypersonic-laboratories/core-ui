@@ -513,7 +513,7 @@ end)
 
 -- Example usage of context menu
 Chat.Subscribe("PlayerSubmit", function(message, player)
-    if message == "/menu" then
+    if message == "/testmenu" then
         local myMenu = ContextMenu.new()
 
         -- Botón simple
