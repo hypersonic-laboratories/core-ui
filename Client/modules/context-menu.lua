@@ -288,7 +288,7 @@ function ContextMenu:setInitialFocus()
         self:focusItem(flattened[self.focusIndex])
     end
 
-    self.UI:CallEvent("SimulateClickOnFirstOption")
+    -- self.UI:CallEvent("SimulateClickOnFirstOption")
     self.UI:BringToFront()
     self.UI:SetFocus()
 end
