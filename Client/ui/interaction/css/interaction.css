@@ -1,82 +1,151 @@
-/* Import apple font */
+/* Interaction System CSS - Updated for multiple interactions */
 @import url('https://fonts.googleapis.com/css2?family=Hind&family=Montserrat:wght@600&display=swap');
-body{
+
+body {
     margin: 0;
     padding: 0;
     font-family: 'Montserrat', sans-serif;
     user-select: none;
-    z-index: -11;
-}
-.screen{
-    width: 100vw;
-    height: 100vh;
-    /* background: url(./media/bg.jpg); */
-    position: relative;
-    /* display: none; */
-    transition: 1s;
-    opacity: 0;
-}
-.circle{
-    width: 30px;
-    height: 30px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-.back_circle{
-    width: 30px;
-    height: 30px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-p{
-    margin-left: 20px;
-    font-size: 1rem;
-    color: white;
-    letter-spacing: 2px;
-    margin: 0;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    height: 19.5px;
-    width:11.5px;
-}
-h1{
-    margin-left: 20px;
-    font-size: 1rem;
-    color: rgba(233, 233, 233, 0.7);
-    letter-spacing: 2px;
-    margin: 0;
-    height: fit-content;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(30%, -50%);
-    text-align: center;
+    background: transparent;
+    pointer-events: none;  /* Don't capture mouse events */
 }
 
-.circular-chart {
-    display: block;
-    margin: 10px auto;
-    max-width: 80%;
-    max-height: 250px;
+/* Container for all interactions */
+#interactions-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    pointer-events: none;
+}
+
+/* Individual interaction item */
+.interaction-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.interaction-item.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Key indicator with circle */
+.key-indicator {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.key-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .circle {
-    fill: none;
-    stroke-width: 2.8;
-    stroke-linecap: round;
-    animation: progress 1s ease-out forwards;
-    transition: all 0.5s ease-in-out;
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
-@keyframes progress {
+.circle svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+/* Progress and background circles */
+.progress-circle,
+.back-circle {
+    fill: none;
+    stroke-width: 2;
+}
+
+.back-circle {
+    stroke: rgba(255, 255, 255, 0.3);
+    stroke-dasharray: 100, 100;
+}
+
+.progress-circle {
+    stroke: transparent;
+    stroke-dasharray: 0, 100;
+    transition: stroke-dasharray 0.1s linear;
+}
+
+/* When pressing key */
+.interaction-item.pressing .progress-circle {
+    stroke: #00FBDD;
+}
+
+.interaction-item.pressing .key-text {
+    color: #00FBDD;
+    transform: translate(-50%, -50%) scale(0.9);
+}
+
+/* Interaction text */
+.interaction-text {
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+}
+
+/* Animation for completion */
+@keyframes complete {
     0% {
-        stroke-dasharray: 0 100;
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+.interaction-item.complete {
+    animation: complete 0.5s ease forwards;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .interaction-item {
+        gap: 15px;
+    }
+    
+    .key-indicator {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .key-text {
+        font-size: 16px;
+    }
+    
+    .interaction-text {
+        font-size: 14px;
     }
 }

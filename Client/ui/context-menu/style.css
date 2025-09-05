@@ -586,6 +586,7 @@ body>.bg {
     height: fit-content !important;
 }
 
+/* Old styles - commented out, using unified styles instead
 .option.password-input .input,
 .option.number-input .input,
 .option.select-input .input {
@@ -597,7 +598,9 @@ body>.bg {
     border-radius: 4px;
     margin-right: 8px;
 }
+*/
 
+/* Old input styles - commented out, using unified styles instead
 .option.password-input .input input[type="password"],
 .option.number-input .input input[type="number"],
 .option.select-input .input select {
@@ -615,12 +618,14 @@ body>.bg {
     text-align: left;
     outline: none;
 }
+*/
 
 .option.password-input .input input[type="password"]::placeholder,
 .option.number-input .input input[type="number"]::placeholder {
     color: #69696D;
 }
 
+/* Old select styles - no longer needed
 .option.select-input .input select:hover {
     background-color: #343437;
 }
@@ -628,6 +633,7 @@ body>.bg {
 .option.select-input .input select:focus {
     outline: none;
 }
+*/
 
 .option.radio .radio-group {
     display: flex;
@@ -740,7 +746,6 @@ body>.bg {
     stroke: #121212;
 }
 
-.option.color-input .input,
 .option.date-input .input {
     position: relative;
     height: 28px;
@@ -748,9 +753,12 @@ body>.bg {
     outline: 1px solid #343437;
     background-color: #121212;
     border-radius: 4px;
+    margin-left: auto; /* Align to the right side */
 }
 
+/* Old color input styles - commented out for custom picker
 .option.color-input .input input[type="color"],
+*/
 .option.date-input .input input[type="date"] {
     position: absolute;
     width: 100%;
@@ -1086,4 +1094,242 @@ body>.bg {
     body {
         --scale: 0.6;
     }
+}
+
+/* Custom fixes for new context menu */
+
+/* Fix range value color when selected */
+.option.range-input.selected .range-value {
+    color: #121212 !important;
+}
+
+/* Unified alignment for all input options */
+.option.text-input,
+.option.password-input,
+.option.number-input,
+.option.date-input,
+.option.color-input,
+.option.select-input {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+}
+
+/* Unified input styles for all text-based inputs */
+.option.text-input .input,
+.option.password-input .input,
+.option.number-input .input {
+    position: relative;
+    height: 28px;
+    width: 187px;
+    outline: 1px solid #343437;
+    background-color: #121212;
+    border-radius: 4px;
+    margin-left: auto; /* Align to the right side */
+}
+
+.option.text-input .input input,
+.option.password-input .input input,
+.option.number-input .input input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    color: #8C8C91;
+    border: none;
+    padding: 0 8px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 14px;
+    text-align: left;
+    outline: none;
+}
+
+/* Fix password and number visibility when selected */
+.option.password-input.selected .input input {
+    color: #FFFFFF !important;  /* White text for password dots */
+}
+
+.option.number-input.selected .input input {
+    color: #FFFFFF !important;  /* White text for number input */
+}
+
+/* Fix radio button text color when selected */
+.option.radio-group.selected label {
+    color: #121212 !important;
+}
+
+.option.radio-group.selected .radio-options {
+    background-color: white !important;
+}
+
+/* Custom color picker styling */
+.option.color-input {
+    overflow: visible !important;
+}
+
+.option.color-input .input.custom-color-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #121212;
+    border: 1px solid #343437;
+    border-radius: 4px;
+    height: 28px;
+    width: 187px;
+    padding: 0 8px;
+    position: relative;
+    cursor: pointer;
+    overflow: visible;
+    margin-left: auto; /* Align to the right side */
+}
+
+.option.color-input .color-display {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #343437;
+    border-radius: 3px;
+}
+
+.option.color-input .color-value {
+    flex: 1;
+    color: #8C8C91;
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.option.color-input.selected .color-value {
+    color: #FFFFFF;
+}
+
+.option.color-input .custom-color-picker.open {
+    border-color: #00FBDD;
+}
+
+.option.color-input .color-palette {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #121212;
+    border: 1px solid #343437;
+    border-radius: 4px;
+    margin-top: 2px;
+    padding: 8px;
+    z-index: 10001;
+    overflow: visible;
+}
+
+.option.color-input .color-palette.hidden {
+    display: none;
+}
+
+.option.color-input .preset-colors {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+}
+
+.option.color-input .preset-color {
+    width: 25px;
+    height: 25px;
+    border: 1px solid #343437;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.option.color-input .preset-color:hover {
+    transform: scale(1.1);
+    border-color: #00FBDD;
+}
+
+/* Removed hex input and apply button styles - no longer needed */
+
+/* Custom select dropdown styling */
+.option.select-input .input.custom-select {
+    display: flex;
+    align-items: center;
+    background-color: #121212;
+    border: 1px solid #343437;
+    border-radius: 4px;
+    height: 28px;
+    width: 187px;
+    position: relative;
+    cursor: pointer;
+    margin-left: auto; /* Align to the right side */
+}
+
+.option.select-input .select-display {
+    flex: 1;
+    padding: 0 8px;
+    color: #8C8C91;
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.option.select-input.selected .select-display {
+    color: #FFFFFF;
+}
+
+.option.select-input .custom-select.open {
+    border-color: #00FBDD;
+}
+
+.option.select-input .custom-select::after {
+    content: '▼';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8C8C91;
+    font-size: 10px;
+    pointer-events: none;
+}
+
+.option.select-input .custom-select.open::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.option.select-input .select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #121212;
+    border: 1px solid #343437;
+    border-radius: 4px;
+    margin-top: 2px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 10001;
+}
+
+.option.select-input .select-dropdown.hidden {
+    display: none;
+}
+
+.option.select-input .select-option {
+    padding: 6px 8px;
+    color: #8C8C91;
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.option.select-input .select-option:hover {
+    background-color: #343437;
+    color: #FFFFFF;
+}
+
+.option.select-input .select-option.selected {
+    background-color: #00FBDD;
+    color: #121212;
 }

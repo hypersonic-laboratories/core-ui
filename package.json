@@ -1,0 +1,12 @@
+{
+    "shared": [],
+    "server": [],
+    "client": [
+        "Client/context-menu.lua",
+        "Client/core-ui-showcase.lua",
+        "Client/interaction.lua",
+        "Client/notifications.lua",
+        "Client/select-menu.lua",
+        "Client/quick-menus.lua"
+    ]
+}

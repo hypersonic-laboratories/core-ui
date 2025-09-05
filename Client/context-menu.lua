@@ -1,22 +1,19 @@
--- Define the ContextMenu class
+-- ContextMenu Class
+
 local ContextMenu = {}
 ContextMenu.__index = ContextMenu
 ContextMenu.currentInstance = nil
 ContextMenu.focusIndex = 1
 
--- Create a new WebUI instance for the context menu
-ContextMenu.UI = WebUI("ContextMenu", "file:///ui/context-menu/index.html")
-
--- Constructor to create a new ContextMenu instance
 function ContextMenu.new()
     local self = setmetatable({}, ContextMenu)
-    self.items = {}                    -- Stores menu items
-    ContextMenu.currentInstance = self -- Keeps track of current instance
+    self.items = {}
+    self.UI = nil
+    ContextMenu.currentInstance = self
 
     return self
 end
 
--- Add a button to the menu
 function ContextMenu:addButton(id, text, callback)
     table.insert(self.items, {
         id = id,
@@ -26,7 +23,6 @@ function ContextMenu:addButton(id, text, callback)
     })
 end
 
--- Add a checkbox to the menu
 function ContextMenu:addCheckbox(id, label, checked, callback)
     checked = checked or false
     table.insert(self.items, {
@@ -38,7 +34,6 @@ function ContextMenu:addCheckbox(id, label, checked, callback)
     })
 end
 
--- Add a dropdown to the menu (with nested dropdown support)
 function ContextMenu:addDropdown(id, label, options, callback)
     local dropdownOptions = {}
     for _, item in ipairs(options) do
@@ -70,8 +65,6 @@ function ContextMenu:addDropdown(id, label, options, callback)
     })
 end
 
-
--- Add a range slider to the menu
 function ContextMenu:addRange(id, label, min, max, value, callback)
     min = min or 0
     max = max or 100
@@ -87,7 +80,6 @@ function ContextMenu:addRange(id, label, min, max, value, callback)
     })
 end
 
--- Add a text input field to the menu
 function ContextMenu:addTextInput(id, text, callback)
     table.insert(self.items, {
         id = id,
@@ -97,7 +89,6 @@ function ContextMenu:addTextInput(id, text, callback)
     })
 end
 
--- Add a password input
 function ContextMenu:addPassword(id, label, placeholder, callback)
     placeholder = placeholder or ""
     table.insert(self.items, {
@@ -109,9 +100,7 @@ function ContextMenu:addPassword(id, label, placeholder, callback)
     })
 end
 
--- Add a radio group
 function ContextMenu:addRadio(id, label, radioOptions, callback)
-    -- radioOptions = { { value = "cash", text = "Cash", checked = true }, ... }
     table.insert(self.items, {
         id = id,
         type = "radio",
@@ -121,7 +110,6 @@ function ContextMenu:addRadio(id, label, radioOptions, callback)
     })
 end
 
--- Add a number input
 function ContextMenu:addNumber(id, label, defaultValue, callback)
     defaultValue = defaultValue or 0
     table.insert(self.items, {
@@ -133,9 +121,7 @@ function ContextMenu:addNumber(id, label, defaultValue, callback)
     })
 end
 
--- Add a select (dropdown) input
 function ContextMenu:addSelect(id, label, selectOptions, callback)
-    -- selectOptions = { { value = "none", text = "None", selected = true }, ... }
     table.insert(self.items, {
         id = id,
         type = "select",
@@ -145,7 +131,6 @@ function ContextMenu:addSelect(id, label, selectOptions, callback)
     })
 end
 
--- Add a text display (or list) to the menu
 function ContextMenu:addText(id, data)
     local is_list = false
     if type(data) == "table" then
@@ -160,56 +145,177 @@ function ContextMenu:addText(id, data)
     })
 end
 
--- Get current menu items
+function ContextMenu:addColorPicker(id, label, defaultColor, callback)
+    defaultColor = defaultColor or "#ffffff"
+    table.insert(self.items, {
+        id = id,
+        type = "color",
+        label = label,
+        value = defaultColor,
+        callback = callback
+    })
+end
+
+function ContextMenu:addDatePicker(id, label, defaultDate, callback)
+    defaultDate = defaultDate or "2024-01-01"
+    table.insert(self.items, {
+        id = id,
+        type = "date",
+        label = label,
+        value = defaultDate,
+        callback = callback
+    })
+end
+
+function ContextMenu:addListPicker(id, label, items, callback)
+    table.insert(self.items, {
+        id = id,
+        type = "list-picker",
+        label = label,
+        list = items,
+        callback = callback
+    })
+end
+
 function ContextMenu:getItems()
     return self.items
 end
 
--- Send notification to WebUI
 function ContextMenu:SendNotification(title, text, time, position, color)
-    self.UI:CallEvent("ShowNotification", {
-        title = title,
-        message = text,
-        duration = time,
-        pos = position,
-        color = color
-    })
+    if self.UI then
+        self.UI:CallFunction("ShowNotification", {
+            title = title,
+            message = text,
+            duration = time,
+            pos = position,
+            color = color
+        })
+    end
 end
 
--- Open the context menu
 function ContextMenu:Open(disable_game_input, enable_mouse)
-    local items = self:getItems()
-    self.UI:CallEvent("buildContextMenu", items)
-    self.UI:BringToFront()
-    self.UI:SetFocus()
+    if self.UI then
+        self.UI:Destroy()
+        self.UI = nil
+    end
 
-    Input.SetInputEnabled(not disable_game_input)
-    Input.SetMouseEnabled(enable_mouse)
+    local uiPath = "Client/ui/context-menu/index.html"
+    self.UI = WebUI("ContextMenu", uiPath)
 
-    self:setInitialFocus()
+    ContextMenu.currentInstance = self
+    self.isOpen = true
 
-    self.UI:CallEvent("ForceFocusOnUI")
+
+    Timer.SetTimeout(function()
+        if self.UI then
+            self.UI:RegisterEventHandler('ExecuteCallback', function(data)
+                if data and data.id then
+                    self:executeCallback(data.id, data.params)
+                end
+            end)
+
+            self.UI:RegisterEventHandler('CloseMenu', function(data)
+                self:Close()
+            end)
+
+            local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
+            if controller then
+                controller.bShowMouseCursor = enable_mouse
+                controller.bEnableClickEvents = enable_mouse
+                controller:SetIgnoreLookInput(disable_game_input)
+                controller:SetIgnoreMoveInput(disable_game_input)
+            end
+
+            Timer.SetTimeout(function()
+                local items = self:getItems()
+
+                self.UI:CallFunction("clearMenuItems", nil)
+
+                for i, item in ipairs(items) do
+                    if item.type == "button" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.text or "", "", "", "", "", "")
+                    elseif item.type == "checkbox" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.label or "", "", "", "", tostring(item.checked), "")
+                    elseif item.type == "range" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.label or "", tostring(item.value), tostring(item.min), tostring(item.max), "", "")
+                    elseif item.type == "text-input" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.label or "", "", "", "", "", "")
+                    elseif item.type == "password" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.label or "", "", "", "", "", item.placeholder or "")
+                    elseif item.type == "number" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.label or "", tostring(item.value), "", "", "", "")
+                    elseif item.type == "color" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.label or "", item.value or "#ffffff", "", "", "", "")
+                    elseif item.type == "date" then
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, item.label or "", item.value or "2024-01-01", "", "", "", "")
+                    elseif item.type == "text-display" then
+                        local dataStr = item.data
+                        if type(item.data) == "table" then
+                            dataStr = table.concat(item.data, ", ")
+                        end
+                        self.UI:CallFunction("addMenuItem", item.id, item.type, dataStr or "", "", "", "", "", "")
+                    elseif item.type == "dropdown" then
+                        self.UI:CallFunction("addDropdownItem", item.id, item.label or "")
+                        if item.options then
+                            for _, opt in ipairs(item.options) do
+                                self.UI:CallFunction("addDropdownOption", opt.id, opt.type or "button", opt.text or opt.label or "")
+                            end
+                        end
+                    elseif item.type == "radio" then
+                        self.UI:CallFunction("addRadioItem", item.id, item.label or "")
+                        if item.options then
+                            for _, opt in ipairs(item.options) do
+                                self.UI:CallFunction("addRadioOption", opt.value, opt.text or "", tostring(opt.checked))
+                            end
+                        end
+                    elseif item.type == "select" then
+                        self.UI:CallFunction("addSelectItem", item.id, item.label or "")
+                        if item.options then
+                            for _, opt in ipairs(item.options) do
+                                self.UI:CallFunction("addSelectOption", opt.value, opt.text or "", tostring(opt.selected))
+                            end
+                        end
+                    end
+                end
+
+                self.UI:CallFunction("buildMenuFromPending", nil)
+
+                if self.Header then
+                    self.UI:CallFunction("setHeader", self.Header)
+                end
+                
+                if self.MenuTitle or self.MenuDescription then
+                    self.UI:CallFunction("setMenuInfo", self.MenuTitle or "", self.MenuDescription or "")
+                end
+
+                self.UI:CallFunction("ForceFocusOnUI", {})
+            end, 1000)
+        end
+    end, 500)
 end
 
--- Set menu information
 function ContextMenu:setMenuInfo(title, description)
-    self.UI:CallEvent("setMenuInfo", title, description)
+    self.MenuTitle = title
+    self.MenuDescription = description
+    
+    if self.UI then
+        self.UI:CallFunction("setMenuInfo", title or "", description or "")
+    end
 end
 
--- Set menu header
 function ContextMenu:SetHeader(title)
     self.Header = title
-    self.UI:CallEvent("setHeader", title)
+    if self.UI then
+        self.UI:CallFunction("setHeader", title)
+    end
 end
 
--- Returns a flat list of all top-level items plus sub-items if dropdowns are expanded
 function ContextMenu:getFlattenedItems()
     local results = {}
     local function traverse(items)
         for _, item in ipairs(items) do
             table.insert(results, item)
 
-            -- Solo recorre sub-items si es dropdown y está expandido
             if item.type == "dropdown" and item.expanded and item.options then
                 traverse(item.options)
             end
@@ -219,7 +325,6 @@ function ContextMenu:getFlattenedItems()
     return results
 end
 
--- Moves focus to the next item
 function ContextMenu:focusNext()
     local flattened = self:getFlattenedItems()
     if #flattened < 1 then return end
@@ -230,7 +335,6 @@ function ContextMenu:focusNext()
     self:focusItem(flattened[self.focusIndex])
 end
 
--- Moves focus to the previous item
 function ContextMenu:focusPrevious()
     local flattened = self:getFlattenedItems()
     if #flattened < 1 then return end
@@ -241,17 +345,14 @@ function ContextMenu:focusPrevious()
     self:focusItem(flattened[self.focusIndex])
 end
 
--- Expands the currently focused dropdown
 function ContextMenu:expandFocused()
     local flattened = self:getFlattenedItems()
     local current = flattened[self.focusIndex]
     if not current or current.type ~= "dropdown" then return end
     current.expanded = true
-    -- Rebuild the menu to reflect changes
     self:refreshMenu()
 end
 
--- Collapses the currently focused dropdown
 function ContextMenu:collapseFocused()
     local flattened = self:getFlattenedItems()
     local current = flattened[self.focusIndex]
@@ -260,52 +361,54 @@ function ContextMenu:collapseFocused()
     self:refreshMenu()
 end
 
--- Focus a specific item by table reference
 function ContextMenu:focusItem(item)
-    if not item then return end
-    -- Tell the JS side to highlight the item by ID
-    self.UI:CallEvent("FocusOptionById", item.id)
+    if not item or not self.UI then return end
+    self.UI:CallFunction("FocusOptionById", item.id)
 end
 
--- Called to rebuild/refresh menu UI while preserving the current focus if possible
 function ContextMenu:refreshMenu()
-    self.UI:CallEvent("buildContextMenu", self.items)
-    self:UIBringToFront()
-    local flattened = self:getFlattenedItems()
-    if self.focusIndex > #flattened then
-        self.focusIndex = #flattened
-    end
-    if flattened[self.focusIndex] then
-        self:focusItem(flattened[self.focusIndex])
+    if self.UI then
+        self.UI:CallFunction("buildContextMenu", self.items)
+        local flattened = self:getFlattenedItems()
+        if self.focusIndex > #flattened then
+            self.focusIndex = #flattened
+        end
+        if flattened[self.focusIndex] then
+            self:focusItem(flattened[self.focusIndex])
+        end
     end
 end
 
--- Call this after building the menu initially
 function ContextMenu:setInitialFocus()
     self.focusIndex = 1
     local flattened = self:getFlattenedItems()
     if #flattened > 0 then
         self:focusItem(flattened[self.focusIndex])
     end
-
-    -- self.UI:CallEvent("SimulateClickOnFirstOption")
-    self.UI:BringToFront()
-    self.UI:SetFocus()
 end
 
--- Force UI to front
-function ContextMenu:UIBringToFront()
-    self.UI:BringToFront()
-end
-
--- Close the context menu
 function ContextMenu:Close()
-    self.UI:CallEvent("closeContextMenu")
-    Input.SetInputEnabled(true)
-    Input.SetMouseEnabled(false)
+    self.isOpen = false
+    if self.UI then
+        self.UI:CallFunction("closeContextMenu", {})
+
+        local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
+        if controller then
+            controller.bShowMouseCursor = false
+            controller.bEnableClickEvents = false
+            controller:SetIgnoreLookInput(false)
+            controller:SetIgnoreMoveInput(false)
+        end
+
+        Timer.SetTimeout(function()
+            if self.UI then
+                self.UI:Destroy()
+                self.UI = nil
+            end
+        end, 100)
+    end
 end
 
--- Execute callback for a specific menu item
 function ContextMenu:executeCallback(id, params)
     for _, item in ipairs(self.items) do
         if item.id == id then
@@ -338,20 +441,16 @@ function ContextMenu:executeCallback(id, params)
     end
 end
 
--- Validates input before executing the callback
 function ContextMenu:validateInput(item, params)
-    -- Text input validation
     if item.type == "text-input" then
         if type(params) ~= "string" or params == "" then
             return false, "Input cannot be empty."
         end
-        -- Example: Check max length (e.g., 50 chars)
         if #params > 50 then
             return false, "Input is too long."
         end
     end
 
-    -- Number input validation
     if item.type == "number" then
         local val = tonumber(params)
         if not val then
@@ -362,28 +461,22 @@ function ContextMenu:validateInput(item, params)
         end
     end
 
-    -- Password input validation
     if item.type == "password" then
         if type(params) ~= "string" or #params < 4 then
             return false, "Password is too short."
         end
-        -- Example: Check for at least one digit
         if not string.match(params, "%d") then
             return false, "Password must contain at least one digit."
         end
     end
 
-    -- Checkbox validation
     if item.type == "checkbox" then
-        -- Expect params as boolean
         if type(params) ~= "boolean" then
             return false, "Invalid checkbox state."
         end
     end
 
-    -- Radio validation
     if item.type == "radio" and item.options then
-        -- Ensure the selected value exists in item.options
         local found = false
         for _, opt in ipairs(item.options) do
             if opt.value == params then
@@ -396,7 +489,6 @@ function ContextMenu:validateInput(item, params)
         end
     end
 
-    -- Select input validation
     if item.type == "select" and item.options then
         local found = false
         for _, opt in ipairs(item.options) do
@@ -410,9 +502,7 @@ function ContextMenu:validateInput(item, params)
         end
     end
 
-    -- Dropdown input validation
     if item.type == "dropdown" and item.options then
-        -- Expect params to match one of the dropdown's sub-options
         local found = false
         for _, opt in ipairs(item.options) do
             if opt.id == params or opt.label == params then
@@ -425,7 +515,6 @@ function ContextMenu:validateInput(item, params)
         end
     end
 
-    -- Range validation
     if item.type == "range" then
         local val = tonumber(params)
         if not val then
@@ -440,8 +529,9 @@ function ContextMenu:validateInput(item, params)
 end
 
 function ContextMenu:ShowError(message)
-    -- Using the Notification system already in place
-    Notification.Send("error", "Invalid Input", message)
+    if Notification and Notification.Send then
+        Notification.Send("error", "Invalid Input", message)
+    end
 end
 
 function ContextMenu:enterOrEdit()
@@ -457,10 +547,14 @@ function ContextMenu:enterOrEdit()
             current.expanded = true
             self:refreshMenu()
         else
-            self.UI:CallEvent("SelectFocusedOption")
+            if self.UI then
+                self.UI:CallFunction("SelectFocusedOption", {})
+            end
         end
     else
-        self.UI:CallEvent("SelectFocusedOption")
+        if self.UI then
+            self.UI:CallFunction("SelectFocusedOption", {})
+        end
     end
 end
 
@@ -476,217 +570,23 @@ function ContextMenu:adjustCurrentOptionValue(keyName)
         else
             current.value = math.min(current.max or 100, current.value + step)
         end
-        -- Reenvía callback
         if current.callback then
             current.callback(current.value)
         end
-        -- O refresca la UI
         self:refreshMenu()
     end
 end
 
--- Add a color picker
-function ContextMenu:addColorPicker(id, label, defaultColor, callback)
-    defaultColor = defaultColor or "#ffffff"
-    table.insert(self.items, {
-        id = id,
-        type = "color",
-        label = label,
-        value = defaultColor,
-        callback = callback
-    })
-end
-
--- Add a date picker
-function ContextMenu:addDatePicker(id, label, defaultDate, callback)
-    defaultDate = defaultDate or "2024-01-01"
-    table.insert(self.items, {
-        id = id,
-        type = "date",
-        label = label,
-        value = defaultDate,
-        callback = callback
-    })
-end
-
-function ContextMenu:addListPicker(id, label, items, callback)
-    -- items = { {id="weapon_sniper", label="Sniper Rifle"}, {id="weapon_ak47", label="AK-47"}, ... }
-    table.insert(self.items, {
-        id = id,
-        type = "list-picker",
-        label = label,
-        list = items, -- array con varios {id, label}
-        callback = callback
-    })
-end
-
--- Subscribe to CloseMenu event from WebUI
-ContextMenu.UI:Subscribe("CloseMenu", function()
+function ContextMenu_CloseMenu()
     if ContextMenu.currentInstance then
         ContextMenu.currentInstance:Close()
     end
-end)
+end
 
--- Subscribe to ExecuteCallback event from WebUI
-ContextMenu.UI:Subscribe("ExecuteCallback", function(id, params)
+function ContextMenu_ExecuteCallback(id, params)
     if ContextMenu.currentInstance then
         ContextMenu.currentInstance:executeCallback(id, params)
     end
-end)
+end
 
--- Example usage of context menu
-Chat.Subscribe("PlayerSubmit", function(message, player)
-    if message == "/testmenu" then
-        local myMenu = ContextMenu.new()
-
-        -- Botón simple
-        myMenu:addButton("button-id", "Button - Function", function()
-            Chat.AddMessage("Pressed addbutton")
-        end)
-
-        -- Checkbox simple
-        myMenu:addCheckbox("checkbox-id", "Checkbox", true, function()
-            Chat.AddMessage("Pressed a checkbox")
-        end)
-
-        -- Dropdown directo
-        myMenu:addDropdown("set-user", "Change Map", {
-            {
-                id = "opt1",
-                label = "Option 1",
-                type = "checkbox",
-                checked = false,
-                callback = function()
-                    Chat.AddMessage('Selected: Option 1')
-                end
-            },
-            {
-                id = "opt2",
-                label = "Option 2",
-                type = "checkbox",
-                checked = false,
-                callback = function()
-                    Chat.AddMessage('Selected: Option 2')
-                end
-            }
-        })
-
-        -- Dropdown con text-input
-        myMenu:addDropdown("dropdown-id", "Set Player money", {
-            {
-                id = "1",
-                label = "Bank",
-                type = "text-input",
-                callback = function(val)
-                    Chat.AddMessage('Entered bank amount: ' .. val)
-                end
-            },
-            {
-                id = "2",
-                label = "Cash",
-                type = "text-input",
-                callback = function(val)
-                    Chat.AddMessage('Entered cash amount: ' .. val)
-                end
-            }
-        })
-
-        -- Range / slider
-        myMenu:addRange(
-            "quantity-example",
-            "Quantity",
-            1,
-            10,
-            5,
-            function(finalValue)
-                Chat.AddMessage("Submitted quantity: " .. tostring(finalValue))
-            end
-        )
-
-        -- Text input normal
-        myMenu:addTextInput("text-input", "Text input", function(text)
-            Chat.AddMessage('Text input: ' .. text)
-        end)
-
-        -- Password input
-        myMenu:addPassword("pwd-1", "Password Input", "Enter Password", function(value)
-            Chat.AddMessage("Password entered: " .. value)
-        end)
-
-        -- Radio group
-        myMenu:addRadio("radio-1", "Payment Method", {
-            { value = "bill", text = "Bill", checked = false },
-            { value = "cash", text = "Cash", checked = true },
-            { value = "bank", text = "Bank", checked = false },
-        }, function(selectedValue)
-            Chat.AddMessage("Radio selected: " .. selectedValue)
-        end)
-
-        -- Number input
-        myMenu:addNumber("number-1", "Number Input", 42, function(val)
-            Chat.AddMessage("Number input: " .. val)
-        end)
-
-        -- Select input
-        myMenu:addSelect("select-1", "Select Something", {
-            { value = "none", text = "None",      selected = true },
-            { value = "one",  text = "Option One" },
-            { value = "two",  text = "Option Two" },
-        }, function(selected)
-            Chat.AddMessage("Selected from dropdown: " .. selected)
-        end)
-
-        -- Color Picker
-        myMenu:addColorPicker("color-1", "Choose a color", "#ff0000", function(colorHex)
-            Chat.AddMessage("Color selected: " .. colorHex)
-        end)
-
-        -- Date Picker
-        myMenu:addDatePicker("date-1", "Choose a date", "2024-12-31", function(theDate)
-            Chat.AddMessage("Date selected: " .. theDate)
-        end)
-
-        -- List Picker
-        myMenu:addListPicker("list-picker-weapons", "Choose weapon", {
-            { id = "weapon_sniper", label = "Sniper Rifle" },
-            { id = "weapon_ak47",   label = "AK 47" },
-            { id = "weapon_m4",     label = "M4" },
-        }, function(selectedItem)
-            Chat.AddMessage("Weapon selected: " .. selectedItem.id)
-        end)
-
-        -- Single text
-        myMenu:addText("static-1", "Hello from a single-line text")
-
-        -- Multi-line text
-        myMenu:addText("static-2", {
-            "First line of text",
-            "Second line of text",
-            "Another line here"
-        })
-
-
-        myMenu:addDropdown("my-text-drop", "Dropdown with Text Displays", {
-            {
-                id = "td-single",
-                type = "text-display",
-                data = "This is a single line of text"
-            },
-            {
-                id = "td-multi",
-                type = "text-display",
-                data = { "Line1", "Line2", "Line3" },
-                is_list = true
-            }
-        })
-
-
-
-        myMenu:setMenuInfo("Menu Title", "Menu Description")
-        myMenu:Open(false, true)
-    end
-end)
-
-
--- Export the ContextMenu class
-Package.Export("ContextMenu", ContextMenu)
+_G.ContextMenu = ContextMenu
