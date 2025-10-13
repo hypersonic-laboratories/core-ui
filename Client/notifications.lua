@@ -82,7 +82,7 @@ function Notification.Send(type, title, message, duration)
     print("[Notification] Added notification:", id, "Total active:", totalActive)
     
     if Notification.destroyTimer then
-        Timer.Clear(Notification.destroyTimer)
+        Timer.ClearTimeout(Notification.destroyTimer)
         Notification.destroyTimer = nil
         print("[Notification] Cancelled pending UI destruction")
     end
@@ -125,7 +125,7 @@ function Notification.Remove(id)
     
     if not hasActiveNotifications then
         if Notification.destroyTimer then
-            Timer.Clear(Notification.destroyTimer)
+            Timer.ClearTimeout(Notification.destroyTimer)
         end
         
         -- print("[Notification] No active notifications, scheduling UI destruction")

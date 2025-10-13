@@ -14,7 +14,7 @@ function QuickMenus.Init()
     if QuickMenus.UI then return end
     
     if QuickMenus.destroyTimer then
-        Timer.Clear(QuickMenus.destroyTimer)
+        Timer.ClearTimeout(QuickMenus.destroyTimer)
         QuickMenus.destroyTimer = nil
     end
     
@@ -211,7 +211,7 @@ end
 
 function QuickMenus._ScheduleDestroy()
     if QuickMenus.destroyTimer then
-        Timer.Clear(QuickMenus.destroyTimer)
+        Timer.ClearTimeout(QuickMenus.destroyTimer)
     end
     
     QuickMenus.destroyTimer = Timer.SetTimeout(function()
@@ -227,7 +227,7 @@ end
 -- Destroy the quick menus system
 function QuickMenus.Destroy()
     if QuickMenus.destroyTimer then
-        Timer.Clear(QuickMenus.destroyTimer)
+        Timer.ClearTimeout(QuickMenus.destroyTimer)
         QuickMenus.destroyTimer = nil
     end
     

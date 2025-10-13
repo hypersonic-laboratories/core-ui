@@ -14,7 +14,7 @@ function SelectMenu.Init()
     if SelectMenu.UI then return end
     
     if SelectMenu.destroyTimer then
-        Timer.Clear(SelectMenu.destroyTimer)
+        Timer.ClearTimeout(SelectMenu.destroyTimer)
         SelectMenu.destroyTimer = nil
     end
     
@@ -195,7 +195,7 @@ end
 
 function SelectMenu._ScheduleDestroy()
     if SelectMenu.destroyTimer then
-        Timer.Clear(SelectMenu.destroyTimer)
+        Timer.ClearTimeout(SelectMenu.destroyTimer)
     end
     
     SelectMenu.destroyTimer = Timer.SetTimeout(function()
@@ -211,7 +211,7 @@ end
 -- Destroy the select menu system
 function SelectMenu.Destroy()
     if SelectMenu.destroyTimer then
-        Timer.Clear(SelectMenu.destroyTimer)
+        Timer.ClearTimeout(SelectMenu.destroyTimer)
         SelectMenu.destroyTimer = nil
     end
     
