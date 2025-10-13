@@ -12,17 +12,9 @@ function Interaction.Init()
 
     -- Create the WebUI
     local uiPath = "Client/ui/interaction/index.html"
-    Interaction.UI = WebUI("InteractionUI", uiPath)
+    Interaction.UI = WebUI("InteractionUI", uiPath, 2)
     Interaction.UIReady = false
 
-    -- Register event handlers for JS->Lua communication
-    Interaction.UI:RegisterEventHandler("InteractionComplete", function(id)
-        Interaction.OnComplete(id)
-    end)
-
-    Interaction.UI:RegisterEventHandler("InteractionCancelled", function(id)
-        Interaction.OnCancel(id)
-    end)
 
     -- Mark UI as ready after a delay
     Timer.SetTimeout(function()
@@ -38,17 +30,58 @@ function Interaction.Init()
             end
         end
 
-        local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
-        if controller then
-            print("enable_mouse -->", enable_mouse)
-            controller.bShowMouseCursor = false
-            controller.bEnableClickEvents = false
-            controller:SetIgnoreLookInput(false)
-            controller:SetIgnoreMoveInput(false)
-        end
+        Interaction.StartInputCheck()
     end, 1500) -- Give UI time to load
 
     -- print("[Interaction] System initialized")
+end
+
+-- Input detection loop
+function Interaction.StartInputCheck()
+    Timer.CreateThread(function()
+        while Interaction.UI do
+            local Player = HPlayer
+
+            for id, interaction in pairs(Interaction.instances) do
+                if interaction.active then
+                    local FKey = UE.FKey()
+                    FKey.KeyName = interaction.key
+
+                    if Player:IsInputKeyDown(FKey) then
+                        if not interaction.pressing then
+                            interaction.pressing = true
+                            interaction.startTime = os.clock()
+                            Interaction.UI:CallFunction("startProgress", id)
+                        else
+                            local elapsed = (os.clock() - interaction.startTime) * 1000
+                            local progress = math.min((elapsed / interaction.duration) * 100, 100)
+
+                            Interaction.UI:CallFunction("updateProgressFromLua", id, progress)
+
+                            if progress >= 100 and not interaction.completed then
+                                interaction.completed = true
+                                Interaction.OnComplete(id)
+                            end
+                        end
+                    elseif interaction.pressing then
+                        local elapsed = (os.clock() - interaction.startTime) * 1000
+                        local progress = (elapsed / interaction.duration) * 100
+
+                        interaction.pressing = false
+                        interaction.completed = false
+
+                        if progress < 100 and progress > 10 then
+                            Interaction.OnCancel(id)
+                        end
+
+                        Interaction.UI:CallFunction("resetProgress", id)
+                    end
+                end
+            end
+
+            Timer.Wait(10)
+        end
+    end)
 end
 
 -- Create a new interaction
@@ -64,13 +97,14 @@ function Interaction.Create(id, config)
         id = id,
         text = config.text or "Interact",
         key = config.key or "E",
-        duration = config.duration or 2000, -- milliseconds
+        duration = config.duration or 2000,
         onComplete = config.onComplete or function() end,
         onCancel = config.onCancel or function() end,
         active = true,
-        progress = 0,
         pressing = false,
-        sent = false -- Track if sent to UI
+        completed = false,
+        startTime = 0,
+        sent = false
     }
 
     -- Store the interaction
@@ -86,9 +120,6 @@ function Interaction.Create(id, config)
             end
         end, 100)
     end
-    -- If UI not ready, it will be sent automatically when UI becomes ready (in Init function)
-
-    -- No need for input checking - handled by JavaScript now
 
     -- print("[Interaction] Created:", id, "-", interaction.text)
     return interaction
@@ -111,8 +142,6 @@ function Interaction.Remove(id)
 
     -- print("[Interaction] Removed:", id)
 end
-
--- Input checking removed - now handled by JavaScript
 
 -- Handle interaction completion
 function Interaction.OnComplete(id)

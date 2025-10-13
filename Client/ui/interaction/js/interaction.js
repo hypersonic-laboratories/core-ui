@@ -13,9 +13,7 @@ function addInteraction(id, text, key, duration) {
     
     interactions[id] = {
         element: template,
-        duration: duration,
-        progress: 0,
-        animating: false
+        duration: duration
     };
     
     setTimeout(() => {
@@ -38,38 +36,27 @@ function removeInteraction(id) {
 function startProgress(id) {
     const interaction = interactions[id];
     if (!interaction) return;
-    
-    interaction.animating = true;
-    interaction.startTime = Date.now();
-    
+
     interaction.element.addClass('pressing');
-    
-    animateProgress(id);
 }
 
-function updateProgress(id, progress) {
+function updateProgressFromLua(id, progress) {
     const interaction = interactions[id];
     if (!interaction) return;
-    
-    interaction.progress = progress;
-    
+
     const circle = interaction.element.find('.progress-circle');
     circle.css({
         'stroke': '#00FBDD',
-        'stroke-dasharray': `${progress}, 100`,
-        'transition': 'stroke-dasharray 0.1s linear'
+        'stroke-dasharray': `${progress}, 100`
     });
 }
 
 function resetProgress(id) {
     const interaction = interactions[id];
     if (!interaction) return;
-    
-    interaction.animating = false;
-    interaction.progress = 0;
-    
+
     interaction.element.removeClass('pressing');
-    
+
     const circle = interaction.element.find('.progress-circle');
     circle.css({
         'stroke': 'transparent',
@@ -78,19 +65,6 @@ function resetProgress(id) {
     });
 }
 
-function animateProgress(id) {
-    const interaction = interactions[id];
-    if (!interaction || !interaction.animating) return;
-    
-    const elapsed = Date.now() - interaction.startTime;
-    const progress = Math.min((elapsed / interaction.duration) * 100, 100);
-    
-    updateProgress(id, progress);
-    
-    if (progress < 100 && interaction.animating) {
-        requestAnimationFrame(() => animateProgress(id));
-    }
-}
 
 function clearAll() {
     for (const id in interactions) {
@@ -98,47 +72,3 @@ function clearAll() {
     }
 }
 
-$(document).ready(function() {
-    const keysPressed = {};
-    
-    $(document).on('keydown', function(e) {
-        const key = e.key.toUpperCase();
-        
-        for (const id in interactions) {
-            const interaction = interactions[id];
-            if (interaction.element.find('.key-text').text() === key) {
-                e.preventDefault();
-                
-                if (!keysPressed[key]) {
-                    keysPressed[key] = true;
-                    startProgress(id);
-                }
-                break;
-            }
-        }
-    });
-    
-    $(document).on('keyup', function(e) {
-        const key = e.key.toUpperCase();
-        
-        if (keysPressed[key]) {
-            keysPressed[key] = false;
-            
-            for (const id in interactions) {
-                const interaction = interactions[id];
-                if (interaction.element.find('.key-text').text() === key) {
-                    if (interaction.progress >= 100) {
-                        ue.interface.broadcast('InteractionComplete', JSON.stringify({ id: id }));
-                        removeInteraction(id);
-                    } else {
-                        resetProgress(id);
-                        if (interaction.progress > 10) {
-                            ue.interface.broadcast('InteractionCancelled', JSON.stringify({ id: id }));
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    });
-});
