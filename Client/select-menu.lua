@@ -19,7 +19,7 @@ function SelectMenu.Init()
     end
     
     local uiPath = "Client/ui/select-menu/index.html"
-    SelectMenu.UI = WebUI("SelectMenuUI", uiPath)
+    SelectMenu.UI = WebUI("SelectMenuUI", uiPath, true)
     SelectMenu.UIReady = false
     
     Timer.SetTimeout(function()

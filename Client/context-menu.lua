@@ -200,7 +200,7 @@ function ContextMenu:Open(disable_game_input, enable_mouse)
     end
 
     local uiPath = "Client/ui/context-menu/index.html"
-    self.UI = WebUI("ContextMenu", uiPath)
+    self.UI = WebUI("ContextMenu", uiPath, true)
 
     ContextMenu.currentInstance = self
     self.isOpen = true

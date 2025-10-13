@@ -19,7 +19,7 @@ function QuickMenus.Init()
     end
     
     local uiPath = "Client/ui/quick-menus/index.html"
-    QuickMenus.UI = WebUI("QuickMenusUI", uiPath)
+    QuickMenus.UI = WebUI("QuickMenusUI", uiPath, true)
     QuickMenus.UIReady = false
 
     Timer.SetTimeout(function()

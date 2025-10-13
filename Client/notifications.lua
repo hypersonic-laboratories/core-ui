@@ -16,7 +16,7 @@ function Notification.Init()
     
     -- Create the WebUI
     local uiPath = "Client/ui/notification/index.html"
-    Notification.UI = WebUI("NotificationUI", uiPath)
+    Notification.UI = WebUI("NotificationUI", uiPath, 3)
     Notification.UIReady = false
   
     -- Mark UI as ready after a delay and process pending notifications
