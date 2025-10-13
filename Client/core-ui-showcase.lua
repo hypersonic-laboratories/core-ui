@@ -53,10 +53,10 @@ function Showcase:CreateDoorInteraction()
         key = "E",
         duration = 2000,
         onComplete = function()
-            -- Notification.Info("Door", "Door opened")
+            Notification.Info("Door", "Door opened")
         end,
         onCancel = function()
-            -- Notification.Warning("Door", "Opening cancelled")
+            Notification.Warning("Door", "Opening cancelled")
         end
     })
 end
@@ -183,15 +183,3 @@ local quickInput_trigger = Trigger( -- select trigger
     function(self, other) Showcase:QuickInput() end,
     Color(1, 0, 0, 0.5)
 )
-
--- -- ========================================
--- -- INITIALIZATION
--- -- ========================================
-
-Timer.SetTimeout(function()
-    print("========================================")
-    print("CORE UI SYSTEM LOADED")
-    print("========================================")
-
-    Showcase:StartShowcase()
-end, 2000)
