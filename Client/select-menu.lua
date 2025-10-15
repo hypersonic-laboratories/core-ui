@@ -5,59 +5,62 @@ SelectMenu = {}
 SelectMenu.__index = SelectMenu
 SelectMenu.UI = nil
 SelectMenu.UIReady = false
+SelectMenu.isVisible = false
 SelectMenu.currentInstance = nil
 SelectMenu.pendingOpen = nil
-SelectMenu.destroyTimer = nil
 
--- Initialize the select menu UI
 function SelectMenu.Init()
     if SelectMenu.UI then return end
-    
-    if SelectMenu.destroyTimer then
-        Timer.ClearTimeout(SelectMenu.destroyTimer)
-        SelectMenu.destroyTimer = nil
+    local uiPath = "core-ui/Client/ui/select-menu/index.html"
+    SelectMenu.UI = WebUI("SelectMenuUI", uiPath, 1)
+
+    if SelectMenu.UI then
+        SelectMenu.UI:RegisterEventHandler("OnOptionSelected", function(data)
+            if data and data.optionId then
+                SelectMenu.OnOptionSelected(data.optionId)
+            end
+        end)
+
+        SelectMenu.UI:RegisterEventHandler("OnBackspace", function(data)
+            SelectMenu.OnBackspace()
+        end)
+
+        SelectMenu.UI:RegisterEventHandler("Ready", function()
+            SelectMenu.UIReady = true
+
+            if SelectMenu.pendingOpen then
+                SelectMenu._OpenImmediate(SelectMenu.pendingOpen.options,
+                    SelectMenu.pendingOpen.title,
+                    SelectMenu.pendingOpen.playersCount)
+                SelectMenu.pendingOpen = nil
+            end
+        end)
     end
-    
-    local uiPath = "Client/ui/select-menu/index.html"
-    SelectMenu.UI = WebUI("SelectMenuUI", uiPath, true)
-    SelectMenu.UIReady = false
-    
-    Timer.SetTimeout(function()
-        if SelectMenu.UI then
-            SelectMenu.UI:RegisterEventHandler("OnOptionSelected", function(data)
-                if data and data.optionId then
-                    SelectMenu.OnOptionSelected(data.optionId)
-                end
-            end)
-            
-            SelectMenu.UI:RegisterEventHandler("OnBackspace", function(data)
-                SelectMenu.OnBackspace()
-            end)
-        end
-        
-        SelectMenu.UIReady = true
-        
-        if SelectMenu.pendingOpen then
-            SelectMenu._OpenImmediate(SelectMenu.pendingOpen.options, 
-                SelectMenu.pendingOpen.title, 
-                SelectMenu.pendingOpen.playersCount)
-            SelectMenu.pendingOpen = nil
-        end
-    end, 500)
 end
 
--- Constructor
+function SelectMenu.Show()
+    if not SelectMenu.UI or SelectMenu.isVisible then return end
+    SelectMenu.UI:SetLayer(5)
+    SelectMenu.isVisible = true
+end
+
+function SelectMenu.Hide()
+    if not SelectMenu.UI or not SelectMenu.isVisible then return end
+    SelectMenu.UI:SetLayer(1)
+    SelectMenu.isVisible = false
+end
+
 function SelectMenu.new()
     local self = setmetatable({}, SelectMenu)
     self.options = {} -- Stores the menu options
     self.title = "Select Option"
     SelectMenu.currentInstance = self
-    
+
     -- Initialize UI if not already done
     if not SelectMenu.UI then
         SelectMenu.Init()
     end
-    
+
     return self
 end
 
@@ -78,24 +81,19 @@ function SelectMenu:SetTitle(title)
     self.title = title
 end
 
--- Internal: Send options to UI (with workaround for HELIX JSON bug)
 function SelectMenu._SendOptionsToUI(options)
-    if not SelectMenu.UI then return end
-    
-    -- Clear previous options
+    if not SelectMenu.UI or not SelectMenu.UIReady then return end
+
     SelectMenu.UI:CallFunction("clearOptions")
-    
-    -- Send each option individually to bypass JSON bug
+
     for i, option in ipairs(options) do
-        -- Send basic option data
-        SelectMenu.UI:CallFunction("addOption", 
+        SelectMenu.UI:CallFunction("addOption",
             option.id,
             option.name,
             option.image,
             option.description
         )
-        
-        -- Send info items separately if they exist
+
         if option.info then
             for j, infoItem in ipairs(option.info) do
                 SelectMenu.UI:CallFunction("addOptionInfo",
@@ -107,30 +105,19 @@ function SelectMenu._SendOptionsToUI(options)
             end
         end
     end
-    
-    -- Build the menu after all options are sent
+
     SelectMenu.UI:CallFunction("buildMenu")
 end
 
--- Internal: Open immediately (when UI is ready)
 function SelectMenu._OpenImmediate(options, title, playersCount)
     if SelectMenu.UI then
-        local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
-        if controller then
-            controller.bShowMouseCursor = true
-            controller.bEnableClickEvents = true
-        end
-        
-        Timer.SetTimeout(function()
-            if SelectMenu.UI then
-                SelectMenu.UI:CallFunction("setMenuTitle", title)
-                SelectMenu.UI:CallFunction("setPlayersCount", tostring(playersCount))
-                
-                SelectMenu._SendOptionsToUI(options)
-                
-                SelectMenu.UI:CallFunction("showMenu")
-            end
-        end, 100)
+        SelectMenu.UI:CallFunction("setMenuTitle", title)
+        SelectMenu.UI:CallFunction("setPlayersCount", tostring(playersCount))
+
+        SelectMenu._SendOptionsToUI(options)
+
+        SelectMenu.UI:CallFunction("showMenu")
+        SelectMenu.Show()
     end
 end
 
@@ -139,7 +126,7 @@ function SelectMenu:Open()
     if SelectMenu.currentInstance then
         -- Get player count
         local playersCount = 0 -- Default value, would normally get from game state
-        
+
         if SelectMenu.UIReady then
             SelectMenu._OpenImmediate(self.options, self.title, playersCount)
         else
@@ -153,19 +140,11 @@ function SelectMenu:Open()
     end
 end
 
--- Close the menu
 function SelectMenu:Close()
     if SelectMenu.UI then
         SelectMenu.UI:CallFunction("hideMenu")
+        SelectMenu.Hide()
     end
-    
-    local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
-    if controller then
-        controller.bShowMouseCursor = false
-        controller.bEnableClickEvents = false
-    end
-    
-    SelectMenu._ScheduleDestroy()
 end
 
 -- Execute callback for a specific menu item
@@ -193,36 +172,25 @@ function SelectMenu.OnBackspace()
     end
 end
 
-function SelectMenu._ScheduleDestroy()
-    if SelectMenu.destroyTimer then
-        Timer.ClearTimeout(SelectMenu.destroyTimer)
-    end
-    
-    SelectMenu.destroyTimer = Timer.SetTimeout(function()
-        if SelectMenu.UI then
-            SelectMenu.UI:Destroy()
-            SelectMenu.UI = nil
-            SelectMenu.UIReady = false
-        end
-        SelectMenu.destroyTimer = nil
-    end, 1000)
-end
-
--- Destroy the select menu system
 function SelectMenu.Destroy()
-    if SelectMenu.destroyTimer then
-        Timer.ClearTimeout(SelectMenu.destroyTimer)
-        SelectMenu.destroyTimer = nil
+    if SelectMenu.currentInstance then
+        SelectMenu.currentInstance:Close()
     end
-    
+
     if SelectMenu.UI then
         SelectMenu.UI:Destroy()
         SelectMenu.UI = nil
+        SelectMenu.UIReady = false
+        SelectMenu.isVisible = false
     end
-    SelectMenu.UIReady = false
+
     SelectMenu.currentInstance = nil
     SelectMenu.pendingOpen = nil
 end
 
 -- Global reference
 _G.SelectMenu = SelectMenu
+
+function onShutdown()
+    SelectMenu.Destroy()
+end

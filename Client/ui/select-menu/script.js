@@ -58,7 +58,7 @@ function addOptionInfo(optionId, infoName, infoValue, infoIcon) {
 function buildMenu() {
     currentOptions = pendingOptions;
     renderOptions();
-    
+
     // Select first option by default
     if (currentOptions.length > 0) {
         setSelectedOptionInfo(currentOptions[0]);
@@ -84,7 +84,7 @@ function hideMenu() {
 // Internal functions
 function renderOptions() {
     $options.slider.options.find('.option').remove();
-    
+
     currentOptions.forEach((option, index) => {
         $options.slider.options.append(`<div class="option ${index == 0 ? "selected" : ""}" data-id="${option.id}">
             <img src="${option.image}" alt="${option.name}" class="bg">
@@ -131,73 +131,81 @@ function sendOptionSelected(optionId) {
 }
 
 // Event handlers
-$(document).ready(function() {
-    // Option click handler (delegated for dynamic content)
-    $(document).on('click', '.options .option', function() {
-        $('.options .option').removeClass('selected');
-        $(this).addClass('selected');
+// $(document).ready(function() {
+// Option click handler (delegated for dynamic content)
+$(document).on('click', '.options .option', function () {
+    $('.options .option').removeClass('selected');
+    $(this).addClass('selected');
 
-        let optionId = $(this).data('id');
-        let option = currentOptions.find(opt => opt.id === optionId);
-        if (option) {
-            setSelectedOptionInfo(option);
-            sendOptionSelected(optionId);
+    let optionId = $(this).data('id');
+    let option = currentOptions.find(opt => opt.id === optionId);
+    if (option) {
+        setSelectedOptionInfo(option);
+        sendOptionSelected(optionId);
+    }
+});
+
+// Page navigation click handler
+$(document).on('click', '.slider .slider-pages .page', function () {
+    let index = $(this).index();
+    actualPage = index;
+    let optionWidth = $options.slider.options.find('.option').outerWidth(true) + 20;
+    $options.slider.options.css('transform', `translateX(${-index * optionWidth * 2}px)`);
+
+    $options.slider.pages.find('.page').removeClass('selected');
+    $(this).addClass('selected');
+
+    $options.slider.button.removeClass('unable');
+    if (index == 0) {
+        $('.slider button.slide[data-side="left"]').addClass('unable');
+    } else if (index == $options.slider.pages.find('.page').length - 1) {
+        $('.slider button.slide[data-side="right"]').addClass('unable');
+    }
+});
+
+// Slider button handlers
+$('.slider button.slide').click(function (e) {
+    if ($(this).hasClass('unable')) return;
+
+    let optionWidth = $options.slider.options.find('.option').outerWidth(true) + 20;
+    let transform = $options.slider.options.css('transform');
+    let actualTranslate = transform === 'none' ? 0 : parseInt(transform.split(',')[4]);
+    let dataSide = $(this).attr('data-side');
+
+    if (dataSide == "left") {
+        actualPage--;
+        $options.slider.options.css('transform', `translateX(${actualTranslate + optionWidth * 2}px)`);
+    } else {
+        actualPage++;
+        $options.slider.options.css('transform', `translateX(${actualTranslate - optionWidth * 2}px)`);
+    }
+
+    $options.slider.pages.find('.page').removeClass('selected');
+    $options.slider.pages.find(`.page:nth-child(${actualPage + 1})`).addClass('selected');
+
+    $options.slider.button.removeClass('unable');
+    if (actualPage == 0) {
+        $('.slider button.slide[data-side="left"]').addClass('unable');
+    } else if (actualPage == $options.slider.pages.find('.page').length - 1) {
+        $('.slider button.slide[data-side="right"]').addClass('unable');
+    }
+});
+
+// Backspace key handler
+$(document).on('keydown', function (e) {
+    if (e.which === 8) { // Backspace
+        e.preventDefault();
+        if (!$('body').hasClass('hidden')) {
+            ue.interface.broadcast('OnBackspace', JSON.stringify({}));
         }
-    });
+    }
+});
+// });
 
-    // Page navigation click handler
-    $(document).on('click', '.slider .slider-pages .page', function() {
-        let index = $(this).index();
-        actualPage = index;
-        let optionWidth = $options.slider.options.find('.option').outerWidth(true) + 20;
-        $options.slider.options.css('transform', `translateX(${-index * optionWidth * 2}px)`);
-
-        $options.slider.pages.find('.page').removeClass('selected');
-        $(this).addClass('selected');
-
-        $options.slider.button.removeClass('unable');
-        if (index == 0) {
-            $('.slider button.slide[data-side="left"]').addClass('unable');
-        } else if (index == $options.slider.pages.find('.page').length - 1) {
-            $('.slider button.slide[data-side="right"]').addClass('unable');
+$(document).ready(function () {
+    setTimeout(function() {
+        if (typeof ue !== 'undefined' && ue.interface && ue.interface.broadcast) {
+            ue.interface.broadcast('Ready', {});
         }
-    });
-
-    // Slider button handlers
-    $('.slider button.slide').click(function(e) {
-        if ($(this).hasClass('unable')) return;
-        
-        let optionWidth = $options.slider.options.find('.option').outerWidth(true) + 20;
-        let transform = $options.slider.options.css('transform');
-        let actualTranslate = transform === 'none' ? 0 : parseInt(transform.split(',')[4]);
-        let dataSide = $(this).attr('data-side');
-
-        if (dataSide == "left") {
-            actualPage--;
-            $options.slider.options.css('transform', `translateX(${actualTranslate + optionWidth * 2}px)`);
-        } else {
-            actualPage++;
-            $options.slider.options.css('transform', `translateX(${actualTranslate - optionWidth * 2}px)`);
-        }
-
-        $options.slider.pages.find('.page').removeClass('selected');
-        $options.slider.pages.find(`.page:nth-child(${actualPage + 1})`).addClass('selected');
-
-        $options.slider.button.removeClass('unable');
-        if (actualPage == 0) {
-            $('.slider button.slide[data-side="left"]').addClass('unable');
-        } else if (actualPage == $options.slider.pages.find('.page').length - 1) {
-            $('.slider button.slide[data-side="right"]').addClass('unable');
-        }
-    });
-
-    // Backspace key handler
-    $(document).on('keydown', function(e) {
-        if (e.which === 8) { // Backspace
-            e.preventDefault();
-            if (!$('body').hasClass('hidden')) {
-                ue.interface.broadcast('OnBackspace', JSON.stringify({}));
-            }
-        }
-    });
+    }, 100);
 });

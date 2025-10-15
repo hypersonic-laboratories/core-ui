@@ -24,6 +24,13 @@ body {
     flex-direction: column;
     gap: 10px;
     pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+#notification-container.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Individual notification */

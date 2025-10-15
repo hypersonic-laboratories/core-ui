@@ -985,3 +985,9 @@ function adjustOptionValue($option, keyCode) {
         input.trigger('change');
     }
 }
+
+setTimeout(function() {
+    if (typeof ue !== 'undefined' && ue.interface && ue.interface.broadcast) {
+        ue.interface.broadcast('Ready', {});
+    }
+}, 100);

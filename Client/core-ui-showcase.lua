@@ -13,34 +13,48 @@ function Showcase:ShowSettingsMenu()
         { value = "high",   text = "High",  selected = true },
         { value = "ultra",  text = "Ultra" }
     }, function(quality)
-        -- Notification.Success("Graphics", "Quality set to " .. quality)
+        Notification.Success("Graphics", "Quality set to " .. quality)
         menu:Close()
     end)
 
     menu:addRange("fov", "Field of View", 60, 120, 90, function(value)
-        -- Notification.Success("Graphics", "Field of View set to " .. value)
+        Notification.Success("Graphics", "Field of View set to " .. value)
     end)
 
     menu:addCheckbox("vsync", "V-Sync", true, function(enabled)
-        -- Notification.Success("Graphics", "V-Sync " .. (enabled and "enabled" or "disabled"))
+        Notification.Success("Graphics", "V-Sync " .. (enabled and "enabled" or "disabled"))
     end)
 
     menu:addText("audio-label", "Audio Settings")
     menu:addRange("master-volume", "Master Volume", 0, 100, 80, function(value)
-        -- Notification.Success("Audio", "Master Volume set to " .. value)
+        Notification.Success("Audio", "Master Volume set to " .. value)
     end)
 
     menu:addCheckbox("subtitles", "Enable Subtitles", false, function(enabled)
-        -- Notification.Success("Audio", "Subtitles " .. (enabled and "enabled" or "disabled"))
+        Notification.Success("Audio", "Subtitles " .. (enabled and "enabled" or "disabled"))
         menu:Close()
     end)
 
     menu:addText("controls-label", "Controls")
     menu:addRange("sensitivity", "Mouse Sensitivity", 1, 100, 50, function(value)
-        -- Notification.Success("Controls", "Mouse Sensitivity set to " .. value)
+        Notification.Success("Controls", "Mouse Sensitivity set to " .. value)
     end)
 
     menu:addButton("apply", "Close Menu", function()
+        menu:Close()
+    end)
+
+    menu:Open(true, true)
+end
+
+function ShowMenu()
+    local menu = ContextMenu.new()
+
+    menu:SetHeader("Shell Preview")
+    menu:setMenuInfo("Menu", "Shells preview")
+
+
+    menu:addButton("apply", "Shell 1", function()
         menu:Close()
     end)
 
@@ -66,11 +80,12 @@ function Showcase:ConfirmQuit()
     qm:ShowConfirm("Quit Game?", "Are you sure you want to quit?",
         function()
             -- Game.Quit()
+            Notification.Info("Game", "Quit confirmed")
             qm:CloseConfirm()
         end,
         function()
             qm:CloseConfirm()
-            -- Notification.Info("Game", "Quit cancelled")
+            Notification.Info("Game", "Quit cancelled")
         end
     )
 end
@@ -103,12 +118,8 @@ end
 
 function Showcase:Notification()
     Notification.Info("Showcase", "This is a notification")
-    Timer.SetTimeout(function()
-        Notification.Warning("Showcase", "This is a warning")
-    end, 100)
-    Timer.SetTimeout(function()
-        Notification.Error("Showcase", "This is an error")
-    end, 200)
+    Notification.Warning("Showcase", "This is a warning")
+    Notification.Error("Showcase", "This is an error")
 end
 
 function Showcase:QuickInput()
@@ -116,7 +127,7 @@ function Showcase:QuickInput()
     qm:ShowInput("Enter Name", "Type your name here...",
         function(value)
             qm:CloseInput()
-            -- Notification.Success("Name Set", "Your name is now " .. value)
+            Notification.Success("Name Set", "Your name is now " .. value)
         end,
         function()
             qm:CloseInput()
@@ -174,7 +185,7 @@ local notif_trigger = Trigger( -- select trigger
     Color(1, 0, 0, 0.5)
 )
 
-local quickInput_trigger = Trigger( -- select trigger
+local quickInput_trigger = Trigger(
     Vector(830.0, -520.0, 100.0),
     Rotator(),
     Vector(100),
@@ -182,4 +193,44 @@ local quickInput_trigger = Trigger( -- select trigger
     true,
     function(self, other) Showcase:QuickInput() end,
     Color(1, 0, 0, 0.5)
+)
+
+RegisterCallback("ExportInteractionComplete", function()
+    exports['core-ui']:ShowNotification("Export", "Interaction completed via export")
+    exports['core-ui']:RemoveInteraction("export-test")
+end)
+
+RegisterCallback("ExportInteractionCancel", function()
+    exports['core-ui']:ShowNotification("warning", "Export", "Interaction cancelled")
+end)
+
+function Showcase:ShowExportsDemo()
+    -- exports['core-ui']:ShowNotification("Exports", "Testing exports system")
+
+    exports['core-ui']:CreateInteraction("export-test", {
+        text = "Export Test",
+        key = "F",
+        duration = 1500,
+        onCompleteCallback = "ExportInteractionComplete",
+        onCancelCallback = "ExportInteractionCancel"
+    })
+
+    -- local menu = exports['core-ui']:CreateContextMenu()
+    -- menu:SetHeader("EXPORT TEST")
+    -- menu:setMenuInfo("Test", "Menu created via export")
+    -- menu:addButton("close", "Close", function()
+    --     menu:Close()
+    --     exports['core-ui']:NotificationWarning("Export", "Menu closed")
+    -- end)
+    -- menu:Open()
+end
+
+local exports_trigger = Trigger(
+    Vector(1700.0, 200.0, 100.0),
+    Rotator(),
+    Vector(100),
+    TriggerType.Sphere,
+    true,
+    function(self, other) Showcase:ShowExportsDemo() end,
+    Color(0, 1, 0, 0.5)
 )

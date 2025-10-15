@@ -5,60 +5,58 @@ QuickMenus = {}
 QuickMenus.__index = QuickMenus
 QuickMenus.UI = nil
 QuickMenus.UIReady = false
+QuickMenus.isVisible = false
 QuickMenus.current = nil
-QuickMenus.pendingDialogs = {}
-QuickMenus.destroyTimer = nil
+QuickMenus.pendingCalls = {}
 
--- Initialize the quick menus UI
 function QuickMenus.Init()
     if QuickMenus.UI then return end
-    
-    if QuickMenus.destroyTimer then
-        Timer.ClearTimeout(QuickMenus.destroyTimer)
-        QuickMenus.destroyTimer = nil
-    end
-    
-    local uiPath = "Client/ui/quick-menus/index.html"
-    QuickMenus.UI = WebUI("QuickMenusUI", uiPath, true)
-    QuickMenus.UIReady = false
 
-    Timer.SetTimeout(function()
-        if QuickMenus.UI then
-            QuickMenus.UI:RegisterEventHandler("OnInputConfirmed", function(data)
-                if data and data.value then
-                    QuickMenus.OnInputConfirmed(data.value)
-                end
-            end)
+    local uiPath = "core-ui/Client/ui/quick-menus/index.html"
+    QuickMenus.UI = WebUI("QuickMenusUI", uiPath, 1)
 
-            QuickMenus.UI:RegisterEventHandler("OnInputCanceled", function(data)
-                QuickMenus.OnInputCanceled()
-            end)
-
-            QuickMenus.UI:RegisterEventHandler("OnConfirmYes", function(data)
-                QuickMenus.OnConfirmYes()
-            end)
-
-            QuickMenus.UI:RegisterEventHandler("OnConfirmNo", function(data)
-                QuickMenus.OnConfirmNo()
-            end)
-        end
-        
-        QuickMenus.UIReady = true
-
-        if #QuickMenus.pendingDialogs > 0 then
-            local dialog = QuickMenus.pendingDialogs[1]
-            table.remove(QuickMenus.pendingDialogs, 1)
-
-            if dialog.type == "input" then
-                QuickMenus._ShowInputImmediate(dialog.title, dialog.placeholder)
-            elseif dialog.type == "confirm" then
-                QuickMenus._ShowConfirmImmediate(dialog.title, dialog.message)
+    if QuickMenus.UI then
+        QuickMenus.UI:RegisterEventHandler("OnInputConfirmed", function(data)
+            if data and data.value then
+                QuickMenus.OnInputConfirmed(data.value)
             end
-        end
-    end, 500)
+        end)
+
+        QuickMenus.UI:RegisterEventHandler("OnInputCanceled", function(data)
+            QuickMenus.OnInputCanceled()
+        end)
+
+        QuickMenus.UI:RegisterEventHandler("OnConfirmYes", function(data)
+            QuickMenus.OnConfirmYes()
+        end)
+
+        QuickMenus.UI:RegisterEventHandler("OnConfirmNo", function(data)
+            QuickMenus.OnConfirmNo()
+        end)
+
+        QuickMenus.UI:RegisterEventHandler("Ready", function()
+            QuickMenus.UIReady = true
+
+            for _, call in ipairs(QuickMenus.pendingCalls) do
+                QuickMenus.UI:CallFunction(call.func, table.unpack(call.args))
+            end
+            QuickMenus.pendingCalls = {}
+        end)
+    end
 end
 
--- Constructor
+function QuickMenus.Show()
+    if not QuickMenus.UI or QuickMenus.isVisible then return end
+    QuickMenus.UI:SetLayer(5)
+    QuickMenus.isVisible = true
+end
+
+function QuickMenus.Hide()
+    if not QuickMenus.UI or not QuickMenus.isVisible then return end
+    QuickMenus.UI:SetLayer(1)
+    QuickMenus.isVisible = false
+end
+
 function QuickMenus.new()
     local self = setmetatable({}, QuickMenus)
     QuickMenus.current = self
@@ -71,20 +69,15 @@ function QuickMenus.new()
     return self
 end
 
--- Internal: Show input immediately (when UI is ready)
 function QuickMenus._ShowInputImmediate(title, placeholder)
-    if QuickMenus.UI then
-        local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
-        if controller then
-            controller.bShowMouseCursor = true
-            controller.bEnableClickEvents = true
-        end
-        
-        Timer.SetTimeout(function()
-            if QuickMenus.UI then
-                QuickMenus.UI:CallFunction("showInputMenu", title, placeholder or "")
-            end
-        end, 100)
+    if QuickMenus.UIReady then
+        QuickMenus.UI:CallFunction("showInputMenu", title, placeholder or "")
+        QuickMenus.Show()
+    else
+        table.insert(QuickMenus.pendingCalls, {
+            func = "showInputMenu",
+            args = {title, placeholder or ""}
+        })
     end
 end
 
@@ -93,34 +86,18 @@ function QuickMenus:ShowInput(title, placeholder, callback, callback_cancel)
     self.input_callback = callback
     self.input_cancel_callback = callback_cancel
 
-    if QuickMenus.UIReady then
-        QuickMenus._ShowInputImmediate(title, placeholder)
-    else
-        -- Queue the dialog
-        table.insert(QuickMenus.pendingDialogs, {
-            type = "input",
-            title = title,
-            placeholder = placeholder
-        })
-    end
+    QuickMenus._ShowInputImmediate(title, placeholder)
 end
 
--- Internal: Show confirm immediately (when UI is ready)
 function QuickMenus._ShowConfirmImmediate(title, message)
-    if QuickMenus.UI then
-        local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
-        if controller then
-            controller.bShowMouseCursor = true
-            controller.bEnableClickEvents = true
-            controller:SetIgnoreLookInput(true)
-            controller:SetIgnoreMoveInput(true)
-        end
-        
-        Timer.SetTimeout(function()
-            if QuickMenus.UI then
-                QuickMenus.UI:CallFunction("showConfirmMenu", title, message)
-            end
-        end, 100)
+    if QuickMenus.UIReady then
+        QuickMenus.UI:CallFunction("showConfirmMenu", title, message)
+        QuickMenus.Show()
+    else
+        table.insert(QuickMenus.pendingCalls, {
+            func = "showConfirmMenu",
+            args = {title, message}
+        })
     end
 end
 
@@ -129,50 +106,21 @@ function QuickMenus:ShowConfirm(title, message, callback_yes, callback_no)
     self.confirm_yes_callback = callback_yes
     self.confirm_no_callback = callback_no
 
-    if QuickMenus.UIReady then
-        QuickMenus._ShowConfirmImmediate(title, message)
-    else
-        -- Queue the dialog
-        table.insert(QuickMenus.pendingDialogs, {
-            type = "confirm",
-            title = title,
-            message = message
-        })
-    end
+    QuickMenus._ShowConfirmImmediate(title, message)
 end
 
--- Close input menu
 function QuickMenus:CloseInput()
     if QuickMenus.UI then
         QuickMenus.UI:CallFunction("hideInputMenu")
+        QuickMenus.Hide()
     end
-
-    local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
-    if controller then
-        controller.bShowMouseCursor = false
-        controller.bEnableClickEvents = false
-        controller:SetIgnoreLookInput(false)
-        controller:SetIgnoreMoveInput(false)
-    end
-    
-    QuickMenus._ScheduleDestroy()
 end
 
--- Close confirm menu
 function QuickMenus:CloseConfirm()
     if QuickMenus.UI then
         QuickMenus.UI:CallFunction("hideConfirmMenu")
+        QuickMenus.Hide()
     end
-
-    local controller = UE.UGameplayStatics.GetPlayerController(HWorld, 0)
-    if controller then
-        controller.bShowMouseCursor = false
-        controller.bEnableClickEvents = false
-        controller:SetIgnoreLookInput(false)
-        controller:SetIgnoreMoveInput(false)
-    end
-    
-    QuickMenus._ScheduleDestroy()
 end
 
 -- Handle input confirmation
@@ -209,35 +157,25 @@ function QuickMenus.OnConfirmNo()
     end
 end
 
-function QuickMenus._ScheduleDestroy()
-    if QuickMenus.destroyTimer then
-        Timer.ClearTimeout(QuickMenus.destroyTimer)
-    end
-    
-    QuickMenus.destroyTimer = Timer.SetTimeout(function()
-        if QuickMenus.UI then
-            QuickMenus.UI:Destroy()
-            QuickMenus.UI = nil
-            QuickMenus.UIReady = false
-        end
-        QuickMenus.destroyTimer = nil
-    end, 1000)
-end
-
--- Destroy the quick menus system
 function QuickMenus.Destroy()
-    if QuickMenus.destroyTimer then
-        Timer.ClearTimeout(QuickMenus.destroyTimer)
-        QuickMenus.destroyTimer = nil
+    if QuickMenus.current then
+        QuickMenus.current:CloseInput()
+        QuickMenus.current:CloseConfirm()
     end
-    
+
     if QuickMenus.UI then
         QuickMenus.UI:Destroy()
         QuickMenus.UI = nil
+        QuickMenus.UIReady = false
+        QuickMenus.isVisible = false
     end
-    QuickMenus.UIReady = false
+
     QuickMenus.current = nil
-    QuickMenus.pendingDialogs = {}
+    QuickMenus.pendingCalls = {}
+end
+
+function onShutdown()
+    QuickMenus.Destroy()
 end
 
 -- Global reference

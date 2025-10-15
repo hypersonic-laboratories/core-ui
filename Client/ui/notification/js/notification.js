@@ -1,7 +1,7 @@
 const notifications = {};
 let notificationZIndex = 1000;
+let containerVisible = false;
 
-// Icons for different notification types
 const icons = {
     success: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -17,93 +17,98 @@ const icons = {
     </svg>`
 };
 
-// Add a new notification
+function ShowContainer() {
+    if (containerVisible) return;
+    $('#notification-container').removeClass('hidden');
+    containerVisible = true;
+}
+
+function HideContainer() {
+    if (!containerVisible) return;
+    $('#notification-container').addClass('hidden');
+    containerVisible = false;
+}
+
 function addNotification(id, type, title, message, duration) {
-    
-    // Clone the template
+
     const template = $('#notification-template').clone();
     template.attr('id', `notification-${id}`);
     template.addClass(`notification-${type}`);
     template.show();
-    
-    // Set content
+
     template.find('.notification-icon').html(icons[type] || icons.info);
     template.find('.notification-title').text(title);
     template.find('.notification-message').text(message);
-    
-    // Add to container
+
     $('#notification-container').prepend(template);
-    
-    // Store notification data
+
     notifications[id] = {
         element: template,
         duration: duration,
         timer: null
     };
-    
-    // Setup close button
+
     template.find('.notification-close').on('click', function() {
         removeNotification(id);
     });
-    
-    // Animate in
-    setTimeout(() => {
-        template.addClass('show');
-    }, 10);
-    
-    // Start progress animation
+
     const progressBar = template.find('.notification-progress');
     progressBar.css({
         'animation-duration': `${duration}ms`
     });
     progressBar.addClass('animate');
-    
-    // Update positions
-    updatePositions();
+
+    ShowContainer();
+
+    setTimeout(() => {
+        template.addClass('show');
+        updatePositions();
+    }, 10);
 }
 
-// Remove a notification
 function removeNotification(id) {
-    
+
     const notification = notifications[id];
     if (!notification) return;
-    
-    // Clear timer if exists
+
     if (notification.timer) {
         clearTimeout(notification.timer);
     }
-    
-    // Animate out
+
     notification.element.removeClass('show');
     notification.element.addClass('hide');
-    
-    // Remove after animation
+
     setTimeout(() => {
         notification.element.remove();
         delete notifications[id];
+
+        hEvent('NotificationClosed', id);
         updatePositions();
     }, 300);
 }
 
-// Update positions of all notifications
 function updatePositions() {
     let topOffset = 20;
     const spacing = 10;
-    
-    $('#notification-container').children('.notification.show').each(function() {
+
+    const visibleNotifs = $('#notification-container').children('.notification.show');
+
+    visibleNotifs.each(function() {
         $(this).css('top', `${topOffset}px`);
         topOffset += $(this).outerHeight() + spacing;
     });
+
+    if (visibleNotifs.length === 0) {
+        HideContainer();
+        hEvent('AllNotificationsClosed');
+    }
 }
 
-// Clear all notifications
 function clearAll() {
-    
+
     for (const id in notifications) {
         removeNotification(id);
     }
 }
 
-// Initialize
-$(document).ready(function() {
-});
+ue.interface.broadcast('Ready', {});
